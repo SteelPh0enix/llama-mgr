@@ -1,0 +1,9 @@
+[package]
+name = "llama-mgr"
+version = "0.1.0"
+edition = "2024"
+authors = ["SteelPh0enix <wojciech_olech@hotmail.com>"]
+description = "Utility for managing llama.cpp tools"
+license = "MIT"
+
+[dependencies]
