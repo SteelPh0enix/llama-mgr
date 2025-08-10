@@ -11,9 +11,13 @@ This program is an utility for managing llama.cpp tools and models.
 
 ## How does it work
 
-`llama-mgr` is a simple way of managing `llama.cpp` installation, tools that it offers, and models on current system - similarly to `ollama`.
-The difference between `ollama` and `llama-mgr` is the fact that `ollama` bundles the inference engine, while `llama-mgr` does not.
-This allows `llama-mgr` to work with any (recent) `llama.cpp` build, giving you access to bleeding-edge functionality and best possible performance.
+`llama-mgr` is a simple way of managing `llama.cpp` installation, tools that it offers,
+and models on current system - similarly to `ollama`.
+
+The difference between `ollama` and `llama-mgr` is the fact that `ollama` bundles the inference engine,
+while `llama-mgr` does not.
+This allows `llama-mgr` to work with any (recent) `llama.cpp` build, giving you access to bleeding-edge
+functionality and best possible performance.
 It also provides some functionality that `ollama` does not, for example tokenization.
 
 Any recent `llama.cpp` version should work fine, the same applies to forks.
