@@ -11,6 +11,13 @@ impl ExternalTool for Ninja {
         Self { path }
     }
 
+    fn global() -> Result<Self, which::Error>
+    where
+        Self: Sized,
+    {
+        which::which("ninja").map(|path| Self::new(path))
+    }
+
     fn is_available(&self) -> bool {
         Command::new(&self.path).output().is_ok()
     }
@@ -22,7 +29,7 @@ mod tests {
 
     #[test]
     fn test_is_available() {
-        let tool = Ninja::new_which("ninja");
+        let tool = Ninja::global();
         assert!(tool.is_ok());
         let tool = tool.unwrap();
         assert!(tool.is_available());

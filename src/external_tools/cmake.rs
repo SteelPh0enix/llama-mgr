@@ -11,6 +11,13 @@ impl ExternalTool for CMake {
         Self { path }
     }
 
+    fn global() -> Result<Self, which::Error>
+    where
+        Self: Sized,
+    {
+        which::which("cmake").map(|path| Self::new(path))
+    }
+
     fn is_available(&self) -> bool {
         Command::new(&self.path).output().is_ok()
     }
@@ -22,7 +29,7 @@ mod tests {
 
     #[test]
     fn test_is_available() {
-        let tool = CMake::new_which("cmake");
+        let tool = CMake::global();
         assert!(tool.is_ok());
         let tool = tool.unwrap();
         assert!(tool.is_available());

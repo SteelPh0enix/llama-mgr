@@ -12,14 +12,10 @@ pub trait ExternalTool {
     fn new(path: PathBuf) -> Self;
 
     /// Create new instance of an external tool.
-    /// Accepts name of tool's executable.
     /// Path is looked up with `which` equivalent.
-    fn new_which(name: &str) -> Result<Self, which::Error>
+    fn global() -> Result<Self, which::Error>
     where
-        Self: Sized,
-    {
-        which::which(name).map(|path: PathBuf| Self::new(path))
-    }
+        Self: Sized;
 
     /// Returns `true` if tool is available, `false` otherwise.
     fn is_available(&self) -> bool;
