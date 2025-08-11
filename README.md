@@ -50,13 +50,12 @@ Usage:
 Default data directory is `$HOME/.llama-mgr`, referred to as `$LLAMA_MGR_DIR`.
 Configuration file is in `$LLAMA_MGR_DIR/config.toml`.
 
-`--instance/-i` makes `llama-mgr` use specified `llama.cpp` instance. `global` is the default one.
+`--instance/-i` makes `llama-mgr` use specified `llama.cpp` instance.
 
 Available commands:
 
 - `install` - download and install `llama.cpp`
 - `uninstall` - uninstall `llama.cpp`
-- `set-instance` - set active instance of `llama.cpp`
 - `quantize` - run `llama-quantize`
 - `convert` - convert a raw huggingface model to GGUF
 - `server` - run and manage `llama-server` instances

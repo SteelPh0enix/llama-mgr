@@ -1,26 +1,51 @@
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 
-#[derive(Parser)]
+use crate::commands::CommonArguments;
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+pub enum InstallationArchitecture {
+    Cpu,
+    Rocm,
+}
+
+#[derive(Debug, Parser)]
 pub struct InstallCommand {
-    #[arg(long, short = 'p', help = "Do not trigger installation, only download the repo.")]
+    #[command(flatten)]
+    common: CommonArguments,
+
+    #[arg(long)]
+    /// Do not trigger installation, only download the repo
     pub pull_only: bool,
-    #[arg(long, short = 'u', help = "Prevents installing llama.cpp if it's not installed already, only updates existing installation.")]
+
+    #[arg(long)]
+    /// Do not install llama.cpp, only update existing profiles
     pub update_only: bool,
-    #[arg(long, help = "Skips the Python environment configuration.")]
+
+    #[arg(long)]
+    /// Skip Python installation and setup
     pub ignore_python: bool,
-    #[arg(long, help = "Use custom repository, instead of official one.")]
-    pub repo_url: Option<String>,
-    #[arg(long, help = "Use custom branch, instead of master.")]
-    pub branch: Option<String>,
-    #[arg(long, help = "Add custom arguments to cmake for building llama.cpp.")]
+
+    #[arg(long, short, default_value = "https://github.com/ggml-org/llama.cpp")]
+    /// Set llama.cpp repository URL.
+    pub repo_url: String,
+
+    #[arg(long, short, default_value = "master")]
+    /// Set llama.cpp repository branch to build from
+    pub branch: String,
+
+    #[arg(long, short)]
+    /// Add custom arguments to cmake for building llama.cpp
     pub cmake_args: Option<String>,
-    #[arg(long, help = "Specify the architecture to build for.")]
-    pub arch: Option<String>,
-    #[arg(long, help = "Specify the amount of threads to use for building.")]
+
+    #[arg(long, short, value_enum, default_value_t = InstallationArchitecture::Cpu)]
+    /// Specify the architecture to build for
+    pub arch: InstallationArchitecture,
+
+    #[arg(long, short = 'j')]
+    /// Specify the amount of threads to use for building.
     pub parallel: Option<usize>,
 }
 
-pub fn run() {
-    let _args: InstallCommand = InstallCommand::parse();
-    // Implementation here using args
+pub fn run(args: InstallCommand) {
+    println!("Install command called with args: {:?}", args);
 }

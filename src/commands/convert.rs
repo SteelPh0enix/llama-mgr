@@ -1,14 +1,21 @@
 use clap::Parser;
 
-#[derive(Parser)]
+use crate::commands::CommonArguments;
+
+#[derive(Debug, Parser)]
 pub struct ConvertCommand {
-    #[arg(long, help = "Path to the directory with HuggingFace model")]
+    #[command(flatten)]
+    common: CommonArguments,
+
+    #[arg(long, short)]
+    /// Path to the directory with HuggingFace model
     pub input: String,
-    #[arg(long, help = "Path to the output GGUF file")]
+
+    #[arg(long, short)]
+    /// Path to the output GGUF file
     pub output: String,
 }
 
-pub fn run() {
-    let _args: ConvertCommand = ConvertCommand::parse();
-    // Implementation here using args
+pub fn run(args: ConvertCommand) {
+    println!("Convert command called with args: {:?}", args);
 }

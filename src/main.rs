@@ -3,9 +3,9 @@ use clap::{Parser, Subcommand};
 mod commands;
 
 #[derive(Parser)]
-#[clap(name = "llama-mgr", version = "0.1.0", author = "SteelPh0enix <wojciech_olech@hotmail.com>", about = "Utility for managing llama.cpp tools")]
+#[command(name = "llama-mgr", version, author, about)]
 struct Cli {
-    #[clap(subcommand)]
+    #[command(subcommand)]
     command: Commands,
 }
 
@@ -15,8 +15,6 @@ enum Commands {
     Install(commands::install::InstallCommand),
     /// Uninstall llama.cpp
     Uninstall(commands::uninstall::UninstallCommand),
-    /// Set active instance of llama.cpp
-    SetInstance(commands::set_instance::SetInstanceCommand),
     /// Run llama-quantize
     Quantize(commands::quantize::QuantizeCommand),
     /// Convert a raw huggingface model to GGUF
@@ -31,33 +29,11 @@ fn main() {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Install(_args) => {
-            // Implementation here using args
-            println!("Running install command");
-        }
-        Commands::Uninstall(args) => {
-            // Implementation here using args
-            println!("Running uninstall command for instance: {:?}", args.instance_name);
-        }
-        Commands::SetInstance(args) => {
-            // Implementation here using args
-            println!("Setting instance to: {}", args.instance_name);
-        }
-        Commands::Quantize(args) => {
-            // Implementation here using args
-            println!("Running quantize command with input: {}, output: {}, quant: {}", args.input, args.output, args.quant);
-        }
-        Commands::Convert(args) => {
-            // Implementation here using args
-            println!("Running convert command with input: {}, output: {}", args.input, args.output);
-        }
-        Commands::Server(args) => {
-            // Implementation here using args
-            println!("Running server command with model: {:?}", args.model);
-        }
-        Commands::Daemon(args) => {
-            // Implementation here using args
-            println!("Running daemon on {}:{}", args.bind, args.port);
-        }
+        Commands::Install(args) => commands::install::run(args),
+        Commands::Uninstall(args) => commands::uninstall::run(args),
+        Commands::Quantize(args) => commands::quantize::run(args),
+        Commands::Convert(args) => commands::convert::run(args),
+        Commands::Server(args) => commands::server::run(args),
+        Commands::Daemon(args) => commands::daemon::run(args),
     }
 }

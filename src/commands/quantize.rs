@@ -1,16 +1,25 @@
 use clap::Parser;
 
-#[derive(Parser)]
+use crate::commands::CommonArguments;
+
+#[derive(Debug, Parser)]
 pub struct QuantizeCommand {
-    #[arg(long, help = "Path to the input GGUF file")]
+    #[command(flatten)]
+    common: CommonArguments,
+
+    #[arg(long, short)]
+    /// Path to the input GGUF file
     pub input: String,
-    #[arg(long, help = "Path to the output GGUF file")]
+
+    #[arg(long, short)]
+    /// Path to the output GGUF file
     pub output: String,
-    #[arg(long, help = "Quantization type.")]
+
+    #[arg(long, short)]
+    /// Quantization type.
     pub quant: String,
 }
 
-pub fn run(args: &[&str]) {
-    let _args: QuantizeCommand = QuantizeCommand::parse_from(args);
-    // Implementation here using args
+pub fn run(args: QuantizeCommand) {
+    println!("Quantize command called with args: {:?}", args);
 }

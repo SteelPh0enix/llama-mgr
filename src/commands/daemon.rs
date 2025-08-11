@@ -1,18 +1,21 @@
 use clap::Parser;
 
-#[derive(Parser)]
+use crate::commands::CommonArguments;
+
+#[derive(Debug, Parser)]
 pub struct DaemonCommand {
-    #[arg(short = 'p', long = "port", help = "Port to listen on", default_value = "8080")]
+    #[command(flatten)]
+    common: CommonArguments,
+
+    #[arg(long, short, default_value_t = 51536)]
+    /// Port to listen on
     pub port: u16,
-    
-    #[arg(short = 'b', long = "bind", help = "Address to bind to", default_value = "127.0.0.1")]
-    pub bind: String,
-    
-    #[arg(long, help = "Run in background")]
-    pub background: bool,
+
+    #[arg(long, short, default_value = "0.0.0.0")]
+    /// Address to bind to
+    pub address: String,
 }
 
-pub fn run(args: &[&str]) {
-    let args: DaemonCommand = DaemonCommand::parse_from(args);
-    println!("Running daemon on {}:{}", args.bind, args.port);
+pub fn run(args: DaemonCommand) {
+    println!("Daemon command called with args: {:?}", args);
 }
