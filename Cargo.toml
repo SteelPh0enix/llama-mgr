@@ -13,3 +13,4 @@ git2 = { version = "0.20.2", features = [
     "vendored-openssl",
 ] }
 toml = "0.9.5"
+which = "8.0.0"

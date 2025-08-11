@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 
 mod commands;
+mod external_tools;
 
 #[derive(Parser)]
 #[command(name = "llama-mgr", version, author, about)]

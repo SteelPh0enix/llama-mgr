@@ -47,5 +47,5 @@ pub struct InstallCommand {
 }
 
 pub fn run(args: InstallCommand) {
-    println!("Install command called with args: {:?}", args);
+    
 }
