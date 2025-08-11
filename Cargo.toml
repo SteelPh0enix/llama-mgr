@@ -7,5 +7,9 @@ description = "Utility for managing llama.cpp tools"
 license = "MIT"
 
 [dependencies]
-git2 = { version = "0.20.2", features = ["vendored-libgit2", "vendored-openssl"] }
+clap = { version = "4.5.43", features = ["derive"] }
+git2 = { version = "0.20.2", features = [
+    "vendored-libgit2",
+    "vendored-openssl",
+] }
 toml = "0.9.5"
