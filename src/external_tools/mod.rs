@@ -3,6 +3,7 @@ use std::path::PathBuf;
 pub mod cmake;
 pub mod ninja;
 pub mod uv;
+pub mod version;
 
 use which;
 

@@ -12,5 +12,6 @@ git2 = { version = "0.20.2", features = [
     "vendored-libgit2",
     "vendored-openssl",
 ] }
+regex = "1.11.1"
 toml = "0.9.5"
 which = "8.0.0"
