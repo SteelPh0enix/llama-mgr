@@ -52,6 +52,8 @@ impl FromStr for PythonInstance {
 }
 
 impl Uv {
+    /// Returns a list of python instances returned from `uv`.
+    /// Instances that have a path are currently installed.
     pub fn get_python_instances(&self) -> Result<Vec<PythonInstance>, std::io::Error> {
         let output = Command::new(&self.path)
             .arg("python")
@@ -74,6 +76,45 @@ impl Uv {
             .collect();
 
         Ok(instances)
+    }
+
+    /// Installs (or updates) selected python instance.
+    pub fn install_python_instance(&self, instance: PythonInstance) -> Result<(), std::io::Error> {
+        let mut command = Command::new(&self.path);
+        command.arg("python").arg("install").arg(instance.id);
+
+        let status = command.status()?;
+
+        if !status.success() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("'uv python install' failed with status: {}", status),
+            ));
+        }
+
+        Ok(())
+    }
+
+    /// Installs (or updates) selected python instance by version.
+    /// If multiple versions are available, picks the first one.
+    /// If some parts of the version are missing, the latest one matching the missing part is installed.
+    pub fn install_python_version(&self, version: Version) -> Result<(), std::io::Error> {
+        let mut command = Command::new(&self.path);
+        command
+            .arg("python")
+            .arg("install")
+            .arg(version.to_string());
+
+        let status = command.status()?;
+
+        if !status.success() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("'uv python install' failed with status: {}", status),
+            ));
+        }
+
+        Ok(())
     }
 }
 
