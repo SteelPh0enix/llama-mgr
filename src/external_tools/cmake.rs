@@ -15,7 +15,7 @@ impl ExternalTool for CMake {
     where
         Self: Sized,
     {
-        which::which("cmake").map(|path| Self::new(path))
+        which::which("cmake").map(Self::new)
     }
 
     fn is_available(&self) -> bool {

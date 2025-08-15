@@ -41,21 +41,21 @@ impl FromStr for Version {
         let major: u8 = version_capture.get(1).map_or(Ok(0), |v| {
             v.as_str()
                 .parse()
-                .map_err(|e| VersionParsingError::ParseIntError(e))
+                .map_err(VersionParsingError::ParseIntError)
         })?;
 
         let minor: Option<u8> = version_capture.get(2).map_or(Ok(None), |v| {
             v.as_str()
                 .parse()
-                .map_err(|e| VersionParsingError::ParseIntError(e))
-                .map(|v| Some(v))
+                .map_err(VersionParsingError::ParseIntError)
+                .map(Some)
         })?;
 
         let patch: Option<u8> = version_capture.get(3).map_or(Ok(None), |v| {
             v.as_str()
                 .parse()
-                .map_err(|e| VersionParsingError::ParseIntError(e))
-                .map(|v| Some(v))
+                .map_err(VersionParsingError::ParseIntError)
+                .map(Some)
         })?;
 
         Ok(Version {

@@ -15,7 +15,7 @@ impl ExternalTool for Ninja {
     where
         Self: Sized,
     {
-        which::which("ninja").map(|path| Self::new(path))
+        which::which("ninja").map(Self::new)
     }
 
     fn is_available(&self) -> bool {

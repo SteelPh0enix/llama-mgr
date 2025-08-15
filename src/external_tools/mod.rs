@@ -5,7 +5,6 @@ pub mod ninja;
 pub mod uv;
 pub mod version;
 
-use which;
 
 pub trait ExternalTool {
     /// Create new instance of an external tool.

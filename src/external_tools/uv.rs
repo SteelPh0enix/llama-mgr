@@ -26,18 +26,16 @@ impl FromStr for PythonInstance {
             let version: Version = id.parse().map_err(|_| ())?;
             let path = if path_info.contains("<download available>") {
                 None
-            } else {
-                if path_info.contains(" -> ") {
-                    if let Some((first_path, _)) = path_info.split_once(" -> ") {
-                        // unwrap is infallible here
-                        Some(PathBuf::from_str(first_path.trim()).unwrap())
-                    } else {
-                        None
-                    }
-                } else {
+            } else if path_info.contains(" -> ") {
+                if let Some((first_path, _)) = path_info.split_once(" -> ") {
                     // unwrap is infallible here
-                    Some(PathBuf::from_str(path_info.trim()).unwrap())
+                    Some(PathBuf::from_str(first_path.trim()).unwrap())
+                } else {
+                    None
                 }
+            } else {
+                // unwrap is infallible here
+                Some(PathBuf::from_str(path_info.trim()).unwrap())
             };
 
             Ok(PythonInstance {
@@ -62,8 +60,7 @@ impl Uv {
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            return Err(std::io::Error::other(
                 format!("'uv python list' failed: {}", stderr),
             ));
         }
@@ -86,8 +83,7 @@ impl Uv {
         let status = command.status()?;
 
         if !status.success() {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            return Err(std::io::Error::other(
                 format!("'uv python install' failed with status: {}", status),
             ));
         }
@@ -108,8 +104,7 @@ impl Uv {
         let status = command.status()?;
 
         if !status.success() {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            return Err(std::io::Error::other(
                 format!("'uv python install' failed with status: {}", status),
             ));
         }
@@ -127,7 +122,7 @@ impl ExternalTool for Uv {
     where
         Self: Sized,
     {
-        which::which("uv").map(|path| Self::new(path))
+        which::which("uv").map(Self::new)
     }
 
     fn is_available(&self) -> bool {
