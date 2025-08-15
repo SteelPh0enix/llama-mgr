@@ -1,3 +1,5 @@
+use std::{error::Error, path::PathBuf};
+
 use clap::{Parser, ValueEnum};
 
 use crate::commands::CommonArguments;
@@ -46,4 +48,47 @@ pub struct InstallCommand {
     pub parallel: Option<usize>,
 }
 
-pub fn run(args: InstallCommand) {}
+pub fn run(args: InstallCommand) -> Result<(), Box<dyn Error>> {
+    let instance_path = get_instance_path(&args)?;
+
+    pull_or_update_source_code(&args, &instance_path)?;
+
+    if args.pull_only {
+        return Ok(());
+    }
+
+    verify_prerequisites()?;
+
+    generate_cmake_build_files(&args, &instance_path)?;
+    build_and_install_llama_cpp(&args, &instance_path)?;
+
+    if !args.ignore_python {
+        setup_python_environment(&args, &instance_path)?;
+    }
+
+    Ok(())
+}
+
+fn get_instance_path(args: &InstallCommand) -> Result<PathBuf> {
+    todo!()
+}
+
+fn verify_prerequisites() -> Result<()> {
+    todo!()
+}
+
+fn pull_or_update_source_code(args: &InstallCommand, instance_path: &PathBuf) -> Result<()> {
+    todo!()
+}
+
+fn generate_cmake_build_files(args: &InstallCommand, instance_path: &PathBuf) -> Result<()> {
+    todo!()
+}
+
+fn build_and_install_llama_cpp(args: &InstallCommand, instance_path: &PathBuf) -> Result<()> {
+    todo!()
+}
+
+fn setup_python_environment(args: &InstallCommand, instance_path: &PathBuf) -> Result<()> {
+    todo!()
+}

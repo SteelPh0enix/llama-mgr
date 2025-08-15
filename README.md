@@ -70,9 +70,6 @@ Each command may accept additional arguments.
 This command can be used to download, build and install `llama.cpp`.
 It does that in few steps.
 
-Before doing anything, `llama-mgr` verifies that the host environment has all the prerequisites installed.
-If not, the command immediately fails with appropriate message.
-
 All the data for `llama.cpp` instance is stored in configurable installation directory, by default
 `$LLAMA_MGR_DIR/instances/$INSTALL_NAME`, where `$INSTALL_NAME` is the name of `llama.cpp` instance.
 This directory will be referred to as `$LLAMA_INSTANCE_DIR`.
@@ -84,6 +81,9 @@ By default it checks out `master` branch of [official `llama.cpp` repository](ht
 If the repository has already been pulled, it's updated before proceeding.
 
 If `--pull-only` option is specified, the process ends here.
+
+After pulling the source code, `llama-mgr` verifies that the host environment has all the prerequisites installed.
+If not, the command immediately fails with appropriate message.
 
 Next, `cmake` is called with arguments gathered from defaults, configuration file and CLI, to generate the build files
 in `$LLAMA_INSTANCE_DIR/build`.
