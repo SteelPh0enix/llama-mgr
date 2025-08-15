@@ -2,11 +2,37 @@ use regex::Regex;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone)]
 pub struct Version {
     pub major: u8,
     pub minor: Option<u8>,
     pub patch: Option<u8>,
+}
+
+impl Version {
+    fn matches(&self, other: &Version) -> bool {
+        if self.major != other.major {
+            return false;
+        }
+
+        let minor_match = match (self.minor, other.minor) {
+            (None, _) => true,
+            (_, None) => true,
+            (Some(a), Some(b)) => a == b,
+        };
+
+        if !minor_match {
+            return false;
+        }
+
+        let patch_match = match (self.patch, other.patch) {
+            (None, _) => true,
+            (_, None) => true,
+            (Some(a), Some(b)) => a == b,
+        };
+
+        patch_match
+    }
 }
 
 impl Display for Version {
@@ -156,5 +182,141 @@ mod tests {
             patch: None,
         };
         assert_eq!(version.to_string(), "3");
+    }
+
+    #[test]
+    fn test_version_matches_exactly() {
+        let first = Version {
+            major: 1,
+            minor: Some(2),
+            patch: Some(3),
+        };
+
+        let second = Version {
+            major: 1,
+            minor: Some(2),
+            patch: Some(3),
+        };
+
+        assert!(first.matches(&second));
+    }
+
+    #[test]
+    fn test_version_does_not_match_exactly_on_different_patch() {
+        let first = Version {
+            major: 1,
+            minor: Some(2),
+            patch: Some(3),
+        };
+
+        let second = Version {
+            major: 1,
+            minor: Some(2),
+            patch: Some(4),
+        };
+
+        assert!(!first.matches(&second));
+    }
+    
+    #[test]
+    fn test_version_does_not_match_exactly_on_different_minor() {
+        let first = Version {
+            major: 1,
+            minor: Some(2),
+            patch: Some(3),
+        };
+
+        let second = Version {
+            major: 1,
+            minor: Some(4),
+            patch: Some(3),
+        };
+
+        assert!(!first.matches(&second));
+    }
+    
+    #[test]
+    fn test_version_does_not_match_exactly_on_different_major() {
+        let first = Version {
+            major: 2,
+            minor: Some(2),
+            patch: Some(3),
+        };
+
+        let second = Version {
+            major: 1,
+            minor: Some(2),
+            patch: Some(3),
+        };
+
+        assert!(!first.matches(&second));
+    }
+
+    #[test]
+    fn test_version_matches_without_patch() {
+        let first = Version {
+            major: 1,
+            minor: Some(2),
+            patch: None,
+        };
+
+        let second = Version {
+            major: 1,
+            minor: Some(2),
+            patch: Some(3),
+        };
+
+        assert!(first.matches(&second));
+    }
+    
+    #[test]
+    fn test_version_matches_without_patch_when_both_none() {
+        let first = Version {
+            major: 1,
+            minor: Some(2),
+            patch: None,
+        };
+
+        let second = Version {
+            major: 1,
+            minor: Some(2),
+            patch: None,
+        };
+
+        assert!(first.matches(&second));
+    }
+    
+    #[test]
+    fn test_version_matches_without_minor() {
+        let first = Version {
+            major: 1,
+            minor: Some(2),
+            patch: None,
+        };
+
+        let second = Version {
+            major: 1,
+            minor: None,
+            patch: None,
+        };
+
+        assert!(first.matches(&second));
+    }
+    
+    #[test]
+    fn test_version_matches_without_minor_when_both_none() {
+        let first = Version {
+            major: 1,
+            minor: None,
+            patch: None,
+        };
+
+        let second = Version {
+            major: 1,
+            minor: None,
+            patch: None,
+        };
+
+        assert!(first.matches(&second));
     }
 }
