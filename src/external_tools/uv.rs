@@ -114,6 +114,46 @@ impl Uv {
 
         Ok(())
     }
+
+    /// Uninstalls selected python instance.
+    pub fn uninstall_python_instance(
+        &self,
+        instance: PythonInstance,
+    ) -> Result<(), std::io::Error> {
+        let mut command = Command::new(&self.path);
+        command.arg("python").arg("uninstall").arg(instance.id);
+
+        let status = command.status()?;
+
+        if !status.success() {
+            return Err(std::io::Error::other(format!(
+                "'uv python uninstall' failed with status: {}",
+                status
+            )));
+        }
+
+        Ok(())
+    }
+
+    /// Uninstalls selected python instance by version.
+    pub fn uninstall_python_version(&self, version: Version) -> Result<(), std::io::Error> {
+        let mut command = Command::new(&self.path);
+        command
+            .arg("python")
+            .arg("uninstall")
+            .arg(version.to_string());
+
+        let status = command.status()?;
+
+        if !status.success() {
+            return Err(std::io::Error::other(format!(
+                "'uv python uninstall' failed with status: {}",
+                status
+            )));
+        }
+
+        Ok(())
+    }
 }
 
 impl ExternalTool for Uv {
