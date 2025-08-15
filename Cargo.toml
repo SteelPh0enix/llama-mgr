@@ -15,3 +15,6 @@ git2 = { version = "0.20.2", features = [
 regex = "1.11.1"
 toml = "0.9.5"
 which = "8.0.0"
+
+[dev-dependencies]
+serial_test = "3.2.0"

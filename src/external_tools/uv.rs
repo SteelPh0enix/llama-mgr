@@ -176,6 +176,7 @@ impl ExternalTool for Uv {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
 
     #[test]
     fn test_is_available() {
@@ -195,5 +196,98 @@ mod tests {
         for instance in instances {
             println!("{:?}", instance);
         }
+    }
+
+    #[test]
+    #[serial]
+    fn test_install_uninstall_python_instance() {
+        let uv = Uv::global().unwrap();
+
+        // Find the full ID for python 3.8.20
+        let python_instances = uv.get_python_instances().unwrap();
+        let instance_template = python_instances
+            .into_iter()
+            .find(|i| i.id.starts_with("cpython-3.8.20"))
+            .expect("Python 3.8.20 not found in uv list");
+
+        let instance_id = instance_template.id.clone();
+
+        // Ensure it's not installed before the test
+        if let Some(instance_to_uninstall) = uv
+            .get_python_instances()
+            .unwrap()
+            .into_iter()
+            .find(|i| i.id == instance_id && i.path.is_some())
+        {
+            uv.uninstall_python_instance(instance_to_uninstall)
+                .unwrap();
+        }
+
+        // Get the instance to install (it should have path: None)
+        let instance_to_install = uv
+            .get_python_instances()
+            .unwrap()
+            .into_iter()
+            .find(|i| i.id == instance_id)
+            .unwrap();
+        assert!(instance_to_install.path.is_none());
+
+        // Install
+        uv.install_python_instance(instance_to_install).unwrap();
+
+        // Verify installation
+        let installed_instance = uv
+            .get_python_instances()
+            .unwrap()
+            .into_iter()
+            .find(|i| i.id == instance_id && i.path.is_some())
+            .expect("Instance not found after install");
+        assert!(installed_instance.path.is_some());
+
+        // Uninstall
+        uv.uninstall_python_instance(installed_instance).unwrap();
+
+        // Verify uninstallation
+        let instances_after_uninstall = uv.get_python_instances().unwrap();
+        assert!(
+            instances_after_uninstall
+                .iter()
+                .find(|i| i.id == instance_id && i.path.is_some())
+                .is_none(),
+            "Instance should not have a path after uninstall"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_install_uninstall_python_version() {
+        let uv = Uv::global().unwrap();
+        let version_to_test = Version::from_str("3.8.20").unwrap();
+
+        // Ensure it's not installed before the test
+        let python_instances = uv.get_python_instances().unwrap();
+        if let Some(instance) = python_instances
+            .into_iter()
+            .find(|i| i.version == version_to_test && i.path.is_some())
+        {
+            uv.uninstall_python_instance(instance).unwrap();
+        }
+
+        // Install
+        uv.install_python_version(version_to_test.clone()).unwrap();
+        let instances_after_install = uv.get_python_instances().unwrap();
+        let installed_instance = instances_after_install
+            .into_iter()
+            .find(|i| i.version == version_to_test && i.path.is_some());
+        assert!(installed_instance.is_some());
+
+        // Uninstall
+        uv.uninstall_python_version(version_to_test.clone())
+            .unwrap();
+        let instances_after_uninstall = uv.get_python_instances().unwrap();
+        let uninstalled_instance = instances_after_uninstall
+            .into_iter()
+            .find(|i| i.version == version_to_test && i.path.is_some());
+        assert!(uninstalled_instance.is_none());
     }
 }
