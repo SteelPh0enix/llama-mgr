@@ -60,9 +60,10 @@ impl Uv {
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(std::io::Error::other(
-                format!("'uv python list' failed: {}", stderr),
-            ));
+            return Err(std::io::Error::other(format!(
+                "'uv python list' failed: {}",
+                stderr
+            )));
         }
 
         let stdout = String::from_utf8_lossy(&output.stdout);
@@ -83,9 +84,10 @@ impl Uv {
         let status = command.status()?;
 
         if !status.success() {
-            return Err(std::io::Error::other(
-                format!("'uv python install' failed with status: {}", status),
-            ));
+            return Err(std::io::Error::other(format!(
+                "'uv python install' failed with status: {}",
+                status
+            )));
         }
 
         Ok(())
@@ -104,9 +106,10 @@ impl Uv {
         let status = command.status()?;
 
         if !status.success() {
-            return Err(std::io::Error::other(
-                format!("'uv python install' failed with status: {}", status),
-            ));
+            return Err(std::io::Error::other(format!(
+                "'uv python install' failed with status: {}",
+                status
+            )));
         }
 
         Ok(())

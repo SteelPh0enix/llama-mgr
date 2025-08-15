@@ -46,6 +46,4 @@ pub struct InstallCommand {
     pub parallel: Option<usize>,
 }
 
-pub fn run(args: InstallCommand) {
-    
-}
+pub fn run(args: InstallCommand) {}
