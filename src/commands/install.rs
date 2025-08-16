@@ -1,10 +1,16 @@
-use std::path::PathBuf;
+use std::{path::Path, process::ExitCode};
 
 use clap::{Parser, ValueEnum};
 
 use crate::{
     commands::{CommandError, CommonArguments, Result},
-    external_tools::{ExternalTool, cmake::CMake, ninja::Ninja, uv::Uv},
+    external_tools::{ExternalTool, cmake::CMake, ninja::Ninja, uv::Uv, version::Version},
+};
+
+const RECOMMENDED_PYTHON_VERSION: Version = Version {
+    major: 3,
+    minor: Some(13),
+    patch: None,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -118,24 +124,41 @@ fn verify_prerequisites(args: &InstallCommand) -> Result<(CMake, Ninja, Option<U
             }
             Ok(prog) => Some(prog),
         };
+
+        uv.as_ref()
+            .unwrap()
+            .install_python_version(RECOMMENDED_PYTHON_VERSION)
+            .map_err(|e| CommandError {
+                message: format!("Could not install Python - {}", e),
+                exit_code: ExitCode::from(exitcode::SOFTWARE as u8),
+            })?;
     }
 
     log::info!("All core prerequisites are installed.");
     Ok((cmake, ninja, uv))
 }
 
-fn pull_or_update_source_code(args: &InstallCommand, instance_path: &PathBuf) -> Result<()> {
+fn pull_or_update_source_code(
+    args: &InstallCommand,
+    instance_path: impl AsRef<Path>,
+) -> Result<()> {
     todo!()
 }
 
-fn generate_cmake_build_files(args: &InstallCommand, instance_path: &PathBuf) -> Result<()> {
+fn generate_cmake_build_files(
+    args: &InstallCommand,
+    instance_path: impl AsRef<Path>,
+) -> Result<()> {
     todo!()
 }
 
-fn build_and_install_llama_cpp(args: &InstallCommand, instance_path: &PathBuf) -> Result<()> {
+fn build_and_install_llama_cpp(
+    args: &InstallCommand,
+    instance_path: impl AsRef<Path>,
+) -> Result<()> {
     todo!()
 }
 
-fn setup_python_environment(args: &InstallCommand, instance_path: &PathBuf) -> Result<()> {
+fn setup_python_environment(args: &InstallCommand, instance_path: impl AsRef<Path>) -> Result<()> {
     todo!()
 }
