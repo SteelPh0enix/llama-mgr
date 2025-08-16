@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::{Parser, ValueEnum};
 
-use crate::commands::{CommonArguments, Result};
+use crate::commands::{CommandError, CommonArguments, Result};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum InstallationArchitecture {
@@ -49,7 +49,19 @@ pub struct InstallCommand {
 }
 
 pub fn run(args: InstallCommand) -> Result<()> {
-    let instance_path = get_instance_path(&args)?;
+    if args.update_only && !args.common.instance_dir_exists() {
+        return Err(CommandError::new(
+            format!(
+                "Instance {} is not installed, nothing to update.",
+                args.common.instance
+            ),
+            exitcode::UNAVAILABLE as u8,
+        ));
+    }
+
+    args.common.create_data_dir()?;
+    args.common.create_instance_dir()?;
+    let instance_path = args.common.get_instance_dir();
 
     pull_or_update_source_code(&args, &instance_path)?;
 
@@ -67,10 +79,6 @@ pub fn run(args: InstallCommand) -> Result<()> {
     }
 
     Ok(())
-}
-
-fn get_instance_path(args: &InstallCommand) -> Result<PathBuf> {
-    todo!()
 }
 
 fn verify_prerequisites() -> Result<()> {

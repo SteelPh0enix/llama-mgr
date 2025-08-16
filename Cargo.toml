@@ -8,11 +8,13 @@ license = "MIT"
 
 [dependencies]
 clap = { version = "4.5.43", features = ["derive"] }
+exitcode = "1.1.2"
 git2 = { version = "0.20.2", features = [
     "vendored-libgit2",
     "vendored-openssl",
 ] }
 regex = "1.11.1"
+shellexpand = "3.1.1"
 thiserror = "2.0.14"
 toml = "0.9.5"
 which = "8.0.0"
