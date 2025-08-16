@@ -17,6 +17,6 @@ pub struct ConvertCommand {
 }
 
 pub fn run(args: ConvertCommand) -> Result<()> {
-    println!("Convert command called with args: {:?}", args);
+    log::info!("Convert command called with args: {:?}", args);
     Ok(())
 }

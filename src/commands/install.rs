@@ -2,7 +2,10 @@ use std::path::PathBuf;
 
 use clap::{Parser, ValueEnum};
 
-use crate::commands::{CommandError, CommonArguments, Result};
+use crate::{
+    commands::{CommandError, CommonArguments, Result},
+    external_tools::{ExternalTool, cmake::CMake, ninja::Ninja, uv::Uv},
+};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum InstallationArchitecture {
@@ -69,7 +72,7 @@ pub fn run(args: InstallCommand) -> Result<()> {
         return Ok(());
     }
 
-    verify_prerequisites()?;
+    verify_prerequisites(&args)?;
 
     generate_cmake_build_files(&args, &instance_path)?;
     build_and_install_llama_cpp(&args, &instance_path)?;
@@ -81,8 +84,44 @@ pub fn run(args: InstallCommand) -> Result<()> {
     Ok(())
 }
 
-fn verify_prerequisites() -> Result<()> {
-    todo!()
+fn verify_prerequisites(args: &InstallCommand) -> Result<(CMake, Ninja, Option<Uv>)> {
+    log::info!("Verifying prerequisites...");
+
+    let cmake =
+        match CMake::global() {
+            Err(_) => return Err(CommandError::new(
+                "CMake is not installed. Please install it using your system's package manager."
+                    .to_string(),
+                exitcode::UNAVAILABLE as u8,
+            )),
+            Ok(prog) => prog,
+        };
+
+    let ninja =
+        match Ninja::global() {
+            Err(_) => return Err(CommandError::new(
+                "Ninja is not installed. Please install it using your system's package manager."
+                    .to_string(),
+                exitcode::UNAVAILABLE as u8,
+            )),
+            Ok(prog) => prog,
+        };
+
+    let mut uv: Option<Uv> = None;
+    if !args.ignore_python {
+        uv = match Uv::global() {
+            Err(_) => {
+                return Err(CommandError::new(
+                    "uv is not installed. Please install it using `pip install uv`.".to_string(),
+                    exitcode::UNAVAILABLE as u8,
+                ));
+            }
+            Ok(prog) => Some(prog),
+        };
+    }
+
+    log::info!("All core prerequisites are installed.");
+    Ok((cmake, ninja, uv))
 }
 
 fn pull_or_update_source_code(args: &InstallCommand, instance_path: &PathBuf) -> Result<()> {

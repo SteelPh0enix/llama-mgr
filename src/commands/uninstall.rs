@@ -13,6 +13,6 @@ pub struct UninstallCommand {
 }
 
 pub fn run(args: UninstallCommand) -> Result<()> {
-    println!("Uninstall command called with args: {:?}", args);
+    log::info!("Uninstall command called with args: {:?}", args);
     Ok(())
 }

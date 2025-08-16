@@ -17,6 +17,6 @@ pub struct DaemonCommand {
 }
 
 pub fn run(args: DaemonCommand) -> Result<()> {
-    println!("Daemon command called with args: {:?}", args);
+    log::info!("Daemon command called with args: {:?}", args);
     Ok(())
 }

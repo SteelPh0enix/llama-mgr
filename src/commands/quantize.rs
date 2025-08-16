@@ -21,6 +21,6 @@ pub struct QuantizeCommand {
 }
 
 pub fn run(args: QuantizeCommand) -> Result<()> {
-    println!("Quantize command called with args: {:?}", args);
+    log::info!("Quantize command called with args: {:?}", args);
     Ok(())
 }

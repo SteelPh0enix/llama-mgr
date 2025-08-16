@@ -29,6 +29,6 @@ pub struct ServerCommand {
 }
 
 pub fn run(args: ServerCommand) -> Result<()> {
-    println!("Server command called with args: {:?}", args);
+    log::info!("Server command called with args: {:?}", args);
     Ok(())
 }

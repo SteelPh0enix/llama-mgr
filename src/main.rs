@@ -45,6 +45,11 @@ impl From<&Commands> for &str {
 }
 
 fn main() -> ExitCode {
+    env_logger::builder()
+        .filter_level(log::LevelFilter::max())
+        .parse_default_env()
+        .init();
+
     let cli = Cli::parse();
     let command_name: &str = (&cli.command).into();
 
@@ -59,16 +64,13 @@ fn main() -> ExitCode {
 
     if result.is_err() {
         let error = result.expect_err("Couldn't unwrap application's error code!");
-        if let Err(e) = stderr().write_fmt(format_args!(
-            "An error happened while executing command '{}': {}",
+
+        log::error!(
+            "Error occurred while executing command '{}' - {}",
             String::from(command_name),
             error.message,
-        )) {
-            println!(
-                "Something is very wrong, and i cannot write following error to stderr: {}",
-                e
-            );
-        }
+        );
+
         error.exit_code
     } else {
         ExitCode::SUCCESS
