@@ -1,8 +1,8 @@
-use std::{error::Error, path::PathBuf};
+use std::path::PathBuf;
 
 use clap::{Parser, ValueEnum};
 
-use crate::commands::CommonArguments;
+use crate::commands::{CommonArguments, Result};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum InstallationArchitecture {
@@ -48,7 +48,7 @@ pub struct InstallCommand {
     pub parallel: Option<usize>,
 }
 
-pub fn run(args: InstallCommand) -> Result<(), Box<dyn Error>> {
+pub fn run(args: InstallCommand) -> Result<()> {
     let instance_path = get_instance_path(&args)?;
 
     pull_or_update_source_code(&args, &instance_path)?;

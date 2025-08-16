@@ -1,6 +1,6 @@
 use clap::Parser;
 
-use crate::commands::CommonArguments;
+use crate::commands::{CommonArguments, Result};
 
 #[derive(Debug, Parser)]
 pub struct QuantizeCommand {
@@ -20,6 +20,7 @@ pub struct QuantizeCommand {
     pub quant: String,
 }
 
-pub fn run(args: QuantizeCommand) {
+pub fn run(args: QuantizeCommand) -> Result<()> {
     println!("Quantize command called with args: {:?}", args);
+    Ok(())
 }

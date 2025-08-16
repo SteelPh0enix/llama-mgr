@@ -1,6 +1,6 @@
 use clap::Parser;
 
-use crate::commands::CommonArguments;
+use crate::commands::{CommonArguments, Result};
 
 #[derive(Debug, Parser)]
 pub struct ConvertCommand {
@@ -16,6 +16,7 @@ pub struct ConvertCommand {
     pub output: String,
 }
 
-pub fn run(args: ConvertCommand) {
+pub fn run(args: ConvertCommand) -> Result<()> {
     println!("Convert command called with args: {:?}", args);
+    Ok(())
 }

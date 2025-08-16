@@ -1,3 +1,5 @@
+use std::process::ExitCode;
+
 use clap::{Parser, Subcommand};
 
 mod commands;
@@ -26,15 +28,23 @@ enum Commands {
     Daemon(commands::daemon::DaemonCommand),
 }
 
-fn main() {
+fn main() -> ExitCode {
     let cli = Cli::parse();
 
-    match cli.command {
+    let result = match cli.command {
         Commands::Install(args) => commands::install::run(args),
         Commands::Uninstall(args) => commands::uninstall::run(args),
         Commands::Quantize(args) => commands::quantize::run(args),
         Commands::Convert(args) => commands::convert::run(args),
         Commands::Server(args) => commands::server::run(args),
         Commands::Daemon(args) => commands::daemon::run(args),
+    };
+
+    if result.is_err() {
+        result
+            .expect_err("Couldn't unwrap application's error code!")
+            .exit_code
+    } else {
+        ExitCode::SUCCESS
     }
 }

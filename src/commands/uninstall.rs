@@ -1,6 +1,6 @@
 use clap::Parser;
 
-use crate::commands::CommonArguments;
+use crate::commands::{CommonArguments, Result};
 
 #[derive(Debug, Parser)]
 pub struct UninstallCommand {
@@ -12,6 +12,7 @@ pub struct UninstallCommand {
     pub force: bool,
 }
 
-pub fn run(args: UninstallCommand) {
+pub fn run(args: UninstallCommand) -> Result<()> {
     println!("Uninstall command called with args: {:?}", args);
+    Ok(())
 }

@@ -1,6 +1,6 @@
 use clap::Parser;
 
-use crate::commands::CommonArguments;
+use crate::commands::{CommonArguments, Result};
 
 #[derive(Debug, Parser)]
 pub struct DaemonCommand {
@@ -16,6 +16,7 @@ pub struct DaemonCommand {
     pub address: String,
 }
 
-pub fn run(args: DaemonCommand) {
+pub fn run(args: DaemonCommand) -> Result<()> {
     println!("Daemon command called with args: {:?}", args);
+    Ok(())
 }
