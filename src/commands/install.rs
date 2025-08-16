@@ -1,6 +1,7 @@
 use std::{path::Path, process::ExitCode};
 
 use clap::{Parser, ValueEnum};
+use git2::{Repository, build::RepoBuilder};
 
 use crate::{
     commands::{CommandError, CommonArguments, Result},
@@ -141,8 +142,121 @@ fn verify_prerequisites(args: &InstallCommand) -> Result<(CMake, Ninja, Option<U
 fn pull_or_update_source_code(
     args: &InstallCommand,
     instance_path: impl AsRef<Path>,
-) -> Result<()> {
-    todo!()
+) -> Result<Repository> {
+    let source_path = instance_path.as_ref().join("source");
+
+    let repo = if source_path.exists() {
+        log::info!(
+            "Updating llama.cpp source code in {}...",
+            source_path.display()
+        );
+
+        let repo = Repository::open(&source_path).map_err(|e| {
+            CommandError::new(
+                format!(
+                    "Failed to open existing repository at {} - {}\n",
+                    source_path.display(),
+                    e
+                ),
+                exitcode::IOERR as u8,
+            )
+        })?;
+
+        {
+            let mut remote = repo.find_remote("origin").map_err(|e| {
+                CommandError::new(
+                    format!("Failed to find remote 'origin' in repository - {}", e),
+                    exitcode::IOERR as u8,
+                )
+            })?;
+
+            remote.fetch(&[&args.branch], None, None).map_err(|e| {
+                CommandError::new(
+                    format!("Failed to fetch from remote - {}", e),
+                    exitcode::IOERR as u8,
+                )
+            })?;
+
+            let (object, reference) = repo.revparse_ext(&args.branch).map_err(|e| {
+                CommandError::new(
+                    format!("Failed to revparse branch {} - {}", args.branch, e),
+                    exitcode::DATAERR as u8,
+                )
+            })?;
+
+            repo.checkout_tree(&object, None).map_err(|e| {
+                CommandError::new(
+                    format!("Failed to checkout tree - {}", e),
+                    exitcode::IOERR as u8,
+                )
+            })?;
+
+            match reference {
+                // gref is an actual reference like branches or tags
+                Some(gref) => repo.set_head(gref.name().unwrap()).map_err(|e| {
+                    CommandError::new(
+                        format!("Failed to set head to {} - {}", gref.name().unwrap(), e),
+                        exitcode::IOERR as u8,
+                    )
+                })?,
+                // this is a commit, not a reference
+                None => repo.set_head_detached(object.id()).map_err(|e| {
+                    CommandError::new(
+                        format!(
+                            "Failed to set head to detached commit {} - {}",
+                            object.id(),
+                            e
+                        ),
+                        exitcode::IOERR as u8,
+                    )
+                })?,
+            };
+        }
+
+        repo
+    } else {
+        log::info!(
+            "Cloning llama.cpp repository to {}...",
+            source_path.display()
+        );
+
+        RepoBuilder::new()
+            .branch(&args.branch)
+            .clone(&args.repo_url, &source_path)
+            .map_err(|e| {
+                CommandError::new(
+                    format!("Failed to clone repository {} - {}", args.repo_url, e),
+                    exitcode::CANTCREAT as u8,
+                )
+            })?
+    };
+
+    log::info!("Updating submodules...");
+
+    {
+        let mut submodules = repo.submodules().map_err(|e| {
+            CommandError::new(
+                format!("Failed to get submodules - {}", e),
+                exitcode::IOERR as u8,
+            )
+        })?;
+
+        for submodule in submodules.iter_mut() {
+            submodule.update(true, None).map_err(|e| {
+                CommandError::new(
+                    format!(
+                        "Failed to update submodule {} - {}",
+                        submodule.path().display(),
+                        e
+                    ),
+                    exitcode::IOERR as u8,
+                )
+            })?;
+        }
+    }
+
+    log::info!("Source code is ready.");
+    Ok(repo)
 }
 
 fn generate_cmake_build_files(
