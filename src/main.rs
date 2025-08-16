@@ -1,4 +1,7 @@
-use std::process::ExitCode;
+use std::{
+    io::{Write, stderr},
+    process::ExitCode,
+};
 
 use clap::{Parser, Subcommand};
 
@@ -28,8 +31,22 @@ enum Commands {
     Daemon(commands::daemon::DaemonCommand),
 }
 
+impl From<&Commands> for &str {
+    fn from(value: &Commands) -> &'static str {
+        match value {
+            Commands::Install(_) => "install",
+            Commands::Uninstall(_) => "uninstall",
+            Commands::Quantize(_) => "quantize",
+            Commands::Convert(_) => "convert",
+            Commands::Server(_) => "server",
+            Commands::Daemon(_) => "daemon",
+        }
+    }
+}
+
 fn main() -> ExitCode {
     let cli = Cli::parse();
+    let command_name: &str = (&cli.command).into();
 
     let result = match cli.command {
         Commands::Install(args) => commands::install::run(args),
@@ -41,9 +58,18 @@ fn main() -> ExitCode {
     };
 
     if result.is_err() {
-        result
-            .expect_err("Couldn't unwrap application's error code!")
-            .exit_code
+        let error = result.expect_err("Couldn't unwrap application's error code!");
+        if let Err(e) = stderr().write_fmt(format_args!(
+            "An error happened while executing command '{}': {}",
+            String::from(command_name),
+            error.message,
+        )) {
+            println!(
+                "Something is very wrong, and i cannot write following error to stderr: {}",
+                e
+            );
+        }
+        error.exit_code
     } else {
         ExitCode::SUCCESS
     }
