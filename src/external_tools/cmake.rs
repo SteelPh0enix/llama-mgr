@@ -1,9 +1,78 @@
-use std::{path::PathBuf, process::Command};
+use std::{
+    ffi::OsStr,
+    path::PathBuf,
+    process::{Command, ExitStatus},
+};
 
 use crate::external_tools::ExternalTool;
 
 pub struct CMake {
     path: PathBuf,
+}
+
+impl CMake {
+    pub fn generate<T: AsRef<OsStr>>(
+        &self,
+        source_dir: T,
+        build_dir: T,
+        generator: T,
+        additional_args: &[T],
+    ) -> std::io::Result<ExitStatus> {
+        let mut command = Command::new(&self.path);
+        command
+            .arg("-S")
+            .arg(source_dir.as_ref())
+            .arg("-B")
+            .arg(build_dir.as_ref())
+            .arg("-G")
+            .arg(generator.as_ref());
+
+        for arg in additional_args {
+            command.arg(arg.as_ref());
+        }
+
+        command.status()
+    }
+
+    pub fn build<T: AsRef<OsStr>>(
+        &self,
+        build_dir: T,
+        config: T,
+        additional_args: &[T],
+    ) -> std::io::Result<ExitStatus> {
+        let mut command = Command::new(&self.path);
+        command
+            .arg("--build")
+            .arg(build_dir.as_ref())
+            .arg("--config")
+            .arg(config.as_ref());
+
+        for arg in additional_args {
+            command.arg(arg.as_ref());
+        }
+
+        command.status()
+    }
+
+    pub fn install<T: AsRef<OsStr>>(
+        &self,
+        build_dir: T,
+        config: T,
+        additional_args: &[T],
+    ) -> std::io::Result<ExitStatus> {
+        let mut command = Command::new(&self.path);
+        command
+            .arg("--install")
+            .arg(build_dir.as_ref())
+            .arg("--config")
+            .arg(config.as_ref());
+
+        for arg in additional_args {
+            command.arg(arg.as_ref());
+        }
+
+        command.status()
+    }
 }
 
 impl ExternalTool for CMake {
