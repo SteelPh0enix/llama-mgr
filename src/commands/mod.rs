@@ -11,7 +11,6 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::Args;
-use shellexpand;
 use thiserror::Error;
 
 #[derive(Debug, Error)]

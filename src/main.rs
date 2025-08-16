@@ -1,7 +1,4 @@
-use std::{
-    io::{Write, stderr},
-    process::ExitCode,
-};
+use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 
