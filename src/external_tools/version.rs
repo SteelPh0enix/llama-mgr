@@ -25,13 +25,11 @@ impl Version {
             return false;
         }
 
-        let patch_match = match (self.patch, other.patch) {
+        match (self.patch, other.patch) {
             (None, _) => true,
             (_, None) => true,
             (Some(a), Some(b)) => a == b,
-        };
-
-        patch_match
+        }
     }
 }
 
