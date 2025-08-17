@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 pub mod cmake;
+pub mod git;
 pub mod ninja;
 pub mod uv;
 pub mod version;
