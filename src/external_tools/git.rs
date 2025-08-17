@@ -11,12 +11,12 @@ pub struct Git {
 }
 
 impl Git {
-    fn clone(
+    pub fn clone(
         &self,
         repo_path: impl AsRef<Path>,
         repo_url: impl AsRef<OsStr>,
         branch: Option<impl AsRef<OsStr>>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), std::io::Error> {
         let mut cmd = Command::new(&self.path);
 
         cmd.arg("clone");
@@ -26,18 +26,18 @@ impl Git {
         cmd.arg(repo_url);
         cmd.arg(repo_path.as_ref().as_os_str());
 
-        cmd.output().map(|_| ()).map_err(|_| ())
+        cmd.status().map(|_| ())
     }
 
-    fn pull(&self, repo_path: impl AsRef<Path>) -> Result<(), ()> {
+    pub fn pull(&self, repo_path: impl AsRef<Path>) -> Result<(), std::io::Error> {
         let mut cmd = Command::new(&self.path);
         cmd.current_dir(repo_path);
 
         cmd.arg("pull");
-        cmd.output().map(|_| ()).map_err(|_| ())
+        cmd.status().map(|_| ())
     }
 
-    fn update_submodules(&self, repo_path: impl AsRef<Path>) -> Result<(), ()> {
+    pub fn update_submodules(&self, repo_path: impl AsRef<Path>) -> Result<(), std::io::Error> {
         let mut cmd = Command::new(&self.path);
         cmd.current_dir(repo_path);
 
@@ -47,7 +47,7 @@ impl Git {
             .arg("--recursive")
             .arg("--remote");
 
-        cmd.output().map(|_| ()).map_err(|_| ())
+        cmd.status().map(|_| ())
     }
 }
 

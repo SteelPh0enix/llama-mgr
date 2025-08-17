@@ -1,11 +1,12 @@
 use std::{path::Path, process::ExitCode};
 
 use clap::{Parser, ValueEnum};
-use git2::{Repository, build::RepoBuilder};
 
 use crate::{
     commands::{CommandError, CommonArguments, Result},
-    external_tools::{ExternalTool, cmake::CMake, ninja::Ninja, uv::Uv, version::Version},
+    external_tools::{
+        ExternalTool, cmake::CMake, git::Git, ninja::Ninja, uv::Uv, version::Version,
+    },
 };
 
 const RECOMMENDED_PYTHON_VERSION: Version = Version {
@@ -73,13 +74,15 @@ pub fn run(args: InstallCommand) -> Result<()> {
     args.common.create_instance_dir()?;
     let instance_path = args.common.get_instance_dir();
 
-    pull_or_update_source_code(&args, &instance_path)?;
+    let git = verify_git_presence()?;
+
+    pull_or_update_source_code(&git, &args, &instance_path)?;
 
     if args.pull_only {
         return Ok(());
     }
 
-    verify_prerequisites(&args)?;
+    let (cmake, ninja, uv) = verify_prerequisites(&args)?;
 
     generate_cmake_build_files(&args, &instance_path)?;
     build_and_install_llama_cpp(&args, &instance_path)?;
@@ -91,8 +94,24 @@ pub fn run(args: InstallCommand) -> Result<()> {
     Ok(())
 }
 
+fn verify_git_presence() -> Result<Git> {
+    log::info!("Verifying git presence...");
+
+    match Git::global() {
+        Err(_) => Err(CommandError::new(
+            "Git is not installed. Please install it using your system's package manager."
+                .to_string(),
+            exitcode::UNAVAILABLE as u8,
+        )),
+        Ok(prog) => {
+            log::info!("Git is installed.");
+            Ok(prog)
+        }
+    }
+}
+
 fn verify_prerequisites(args: &InstallCommand) -> Result<(CMake, Ninja, Option<Uv>)> {
-    log::info!("Verifying prerequisites...");
+    log::info!("Verifying prerequisites presence...");
 
     let cmake =
         match CMake::global() {
@@ -135,128 +154,37 @@ fn verify_prerequisites(args: &InstallCommand) -> Result<(CMake, Ninja, Option<U
             })?;
     }
 
-    log::info!("All core prerequisites are installed.");
+    log::info!("All build prerequisites are installed.");
     Ok((cmake, ninja, uv))
 }
 
 fn pull_or_update_source_code(
+    git: &Git,
     args: &InstallCommand,
     instance_path: impl AsRef<Path>,
-) -> Result<Repository> {
+) -> Result<()> {
     let source_path = instance_path.as_ref().join("source");
-
-    let repo = if source_path.exists() {
-        log::info!(
-            "Updating llama.cpp source code in {}...",
-            source_path.display()
-        );
-
-        let repo = Repository::open(&source_path).map_err(|e| {
-            CommandError::new(
-                format!(
-                    "Failed to open existing repository at {} - {}\n",
-                    source_path.display(),
-                    e
-                ),
-                exitcode::IOERR as u8,
-            )
-        })?;
-
-        {
-            let mut remote = repo.find_remote("origin").map_err(|e| {
-                CommandError::new(
-                    format!("Failed to find remote 'origin' in repository - {}", e),
-                    exitcode::IOERR as u8,
-                )
-            })?;
-
-            remote.fetch(&[&args.branch], None, None).map_err(|e| {
-                CommandError::new(
-                    format!("Failed to fetch from remote - {}", e),
-                    exitcode::IOERR as u8,
-                )
-            })?;
-
-            let (object, reference) = repo.revparse_ext(&args.branch).map_err(|e| {
-                CommandError::new(
-                    format!("Failed to revparse branch {} - {}", args.branch, e),
-                    exitcode::DATAERR as u8,
-                )
-            })?;
-
-            repo.checkout_tree(&object, None).map_err(|e| {
-                CommandError::new(
-                    format!("Failed to checkout tree - {}", e),
-                    exitcode::IOERR as u8,
-                )
-            })?;
-
-            match reference {
-                // gref is an actual reference like branches or tags
-                Some(gref) => repo.set_head(gref.name().unwrap()).map_err(|e| {
-                    CommandError::new(
-                        format!("Failed to set head to {} - {}", gref.name().unwrap(), e),
-                        exitcode::IOERR as u8,
-                    )
-                })?,
-                // this is a commit, not a reference
-                None => repo.set_head_detached(object.id()).map_err(|e| {
-                    CommandError::new(
-                        format!(
-                            "Failed to set head to detached commit {} - {}",
-                            object.id(),
-                            e
-                        ),
-                        exitcode::IOERR as u8,
-                    )
-                })?,
-            };
-        }
-
-        repo
-    } else {
-        log::info!(
-            "Cloning llama.cpp repository to {}...",
-            source_path.display()
-        );
-
-        RepoBuilder::new()
-            .branch(&args.branch)
-            .clone(&args.repo_url, &source_path)
-            .map_err(|e| {
-                CommandError::new(
-                    format!("Failed to clone repository {} - {}", args.repo_url, e),
-                    exitcode::CANTCREAT as u8,
-                )
-            })?
+    let map_git_err = |_| CommandError {
+        message:
+            "An error happened while executing git command, see standard output for more details."
+                .into(),
+        exit_code: ExitCode::from(exitcode::SOFTWARE as u8),
     };
 
-    log::info!("Updating submodules...");
-
-    {
-        let mut submodules = repo.submodules().map_err(|e| {
-            CommandError::new(
-                format!("Failed to get submodules - {}", e),
-                exitcode::IOERR as u8,
-            )
-        })?;
-
-        for submodule in submodules.iter_mut() {
-            submodule.update(true, None).map_err(|e| {
-                CommandError::new(
-                    format!(
-                        "Failed to update submodule {} - {}",
-                        submodule.path().display(),
-                        e
-                    ),
-                    exitcode::IOERR as u8,
-                )
-            })?;
-        }
+    if source_path.exists() {
+        log::info!("Pulling latest llama.cpp source code from git...");
+        git.pull(&source_path).map_err(map_git_err)?;
+    } else {
+        log::info!("Cloning llama.cpp source code...");
+        git.clone(&source_path, &args.repo_url, Some(&args.branch))
+            .map_err(map_git_err)?;
     }
 
+    log::info!("Updating submodules...");
+    git.update_submodules(&source_path).map_err(map_git_err)?;
+
     log::info!("Source code is ready.");
-    Ok(repo)
+    Ok(())
 }
 
 fn generate_cmake_build_files(
