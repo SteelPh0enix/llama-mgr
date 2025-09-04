@@ -1,25 +1,47 @@
 {
   description = "llama-mgr development flake";
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
-  inputs.systems.url = "github:nix-systems/default";
-  inputs.flake-utils = {
-    url = "github:numtide/flake-utils";
-    inputs.systems.follows = "systems";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    systems.url = "github:nix-systems/default";
+    flake-utils = {
+      url = "github:numtide/flake-utils";
+      inputs.systems.follows = "systems";
+    };
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
-    { nixpkgs, flake-utils, ... }:
+    {
+      nixpkgs,
+      flake-utils,
+      rust-overlay,
+      ...
+    }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        overlays = [ (import rust-overlay) ];
+        pkgs = import nixpkgs {
+          inherit system overlays;
+        };
         dev-packages = with pkgs; [
           # generic
           bashInteractive
 
           # rust
-          cargo
-          rustc
+          (rust-bin.stable.latest.default.override {
+            extensions = [
+              "cargo"
+              "rust-analysis"
+              "rust-src"
+              "rust-std"
+              "rustc"
+              "rustfmt"
+            ];
+          })
 
           # llama.cpp core
           cmake

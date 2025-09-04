@@ -1,12 +1,27 @@
 {
     "cSpell.words": [
         "blas",
+        "CANTCREAT",
+        "cpython",
         "direnv",
+        "enix",
+        "exitcode",
+        "ggml",
+        "GGUF",
+        "huggingface",
+        "MSVC",
+        "nixos",
         "nixpkgs",
         "numtide",
+        "ollama",
         "openmpi",
+        "oxalica",
         "pkgs",
-        "rustc"
+        "rocm",
+        "rustc",
+        "shellexpand",
+        "thiserror",
+        "venv"
     ],
     "nixEnvSelector.nixFile": "${workspaceFolder}/shell.nix"
 }

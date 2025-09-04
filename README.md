@@ -36,7 +36,8 @@ Both command-line interface and API provide the same functionality.
   - For CPU inference, any modern version of GCC/Clang/MSVC should be fine
   - For AMD GPU inference, ROCm is required
   - For NVIDIA GPU inference, CUDA is required
-  - For other platforms, consult `llama.cpp` documentation.
+  - For other platforms and additional acceleration options (MPI, BLAS, etc.), consult `llama.cpp` and `ggml`
+    documentation and CMakeLists.
 
 ## Command-line interface
 
