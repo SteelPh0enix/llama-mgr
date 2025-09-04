@@ -1,0 +1,12 @@
+{
+    "cSpell.words": [
+        "blas",
+        "direnv",
+        "nixpkgs",
+        "numtide",
+        "openmpi",
+        "pkgs",
+        "rustc"
+    ],
+    "nixEnvSelector.nixFile": "${workspaceFolder}/shell.nix"
+}
