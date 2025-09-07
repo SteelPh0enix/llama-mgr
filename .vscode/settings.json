@@ -23,6 +23,5 @@
         "shellexpand",
         "thiserror",
         "venv"
-    ],
-    "nixEnvSelector.nixFile": "${workspaceFolder}/shell.nix"
+    ]
 }
