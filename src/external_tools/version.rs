@@ -92,6 +92,8 @@ impl FromStr for Version {
 
 #[cfg(test)]
 mod tests {
+    use std::num::{IntErrorKind, ParseIntError};
+
     use super::*;
 
     #[test]
@@ -147,9 +149,17 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_version_from_string_invalid() {
+    fn test_parse_version_from_string_version_not_found() {
         let version = "invalid".parse::<Version>();
         assert!(version.is_err());
+        if let Err(e) = version {
+            match e {
+                VersionParsingError::ParseIntError(parse_int_error) => {
+                    panic!("ParseIntError: {}", parse_int_error)
+                }
+                VersionParsingError::VersionNotFound => {}
+            }
+        }
     }
 
     #[test]
@@ -215,7 +225,7 @@ mod tests {
 
         assert!(!first.matches(&second));
     }
-    
+
     #[test]
     fn test_version_does_not_match_exactly_on_different_minor() {
         let first = Version {
@@ -232,7 +242,7 @@ mod tests {
 
         assert!(!first.matches(&second));
     }
-    
+
     #[test]
     fn test_version_does_not_match_exactly_on_different_major() {
         let first = Version {
@@ -266,7 +276,7 @@ mod tests {
 
         assert!(first.matches(&second));
     }
-    
+
     #[test]
     fn test_version_matches_without_patch_when_both_none() {
         let first = Version {
@@ -283,7 +293,7 @@ mod tests {
 
         assert!(first.matches(&second));
     }
-    
+
     #[test]
     fn test_version_matches_without_minor() {
         let first = Version {
@@ -300,7 +310,7 @@ mod tests {
 
         assert!(first.matches(&second));
     }
-    
+
     #[test]
     fn test_version_matches_without_minor_when_both_none() {
         let first = Version {
