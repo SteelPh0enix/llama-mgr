@@ -1,15 +1,32 @@
+use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 
 mod commands;
+mod config;
 mod external_tools;
+
+use config::Config;
 
 #[derive(Parser)]
 #[command(name = "llama-mgr", version, author, about)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
+
+    /// Path to the configuration file
+    #[arg(
+        short,
+        long,
+        global = true,
+        default_value = "$HOME/.llama-mgr/config.toml"
+    )]
+    config: String,
+
+    /// Profile to use
+    #[arg(short, long, global = true)]
+    profile: Option<String>,
 }
 
 #[derive(Subcommand)]
@@ -41,6 +58,34 @@ impl From<&Commands> for &str {
     }
 }
 
+/// Load configuration from file
+fn load_config(config_path: &str) -> Result<Config, Box<dyn std::error::Error>> {
+    let expanded_path = shellexpand::tilde(config_path);
+    let config_path = PathBuf::from(expanded_path.as_ref());
+
+    if !config_path.exists() {
+        log::info!(
+            "Configuration file not found, creating default configuration at: {:?}",
+            config_path
+        );
+
+        // Create parent directories if they don't exist
+        if let Some(parent) = config_path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+
+        // Write default configuration
+        let default_config = Config::default();
+        let config_str = toml::to_string_pretty(&default_config)?;
+        std::fs::write(&config_path, config_str)?;
+    }
+
+    let config_str = std::fs::read_to_string(&config_path)?;
+    let config: Config = toml::from_str(&config_str)?;
+
+    Ok(config)
+}
+
 fn main() -> ExitCode {
     env_logger::builder()
         .filter_level(log::LevelFilter::max())
@@ -48,15 +93,43 @@ fn main() -> ExitCode {
         .init();
 
     let cli = Cli::parse();
+
+    // Load configuration
+    let config = match load_config(&cli.config) {
+        Ok(config) => config,
+        Err(e) => {
+            log::error!("Failed to load configuration: {}", e);
+            return ExitCode::from(exitcode::NOINPUT as u8);
+        }
+    };
+
+    // Apply profile override from command line if provided
+    let profile_name: &str = if let Some(profile) = &cli.profile {
+        profile
+    } else {
+        &config.config.default_profile
+    };
+
+    // Get the selected profile
+    let profile = match config.get_profile(Some(profile_name)) {
+        Some(profile) => profile,
+        None => {
+            log::error!("Profile '{}' not found in configuration", profile_name);
+            return ExitCode::from(exitcode::UNAVAILABLE as u8);
+        }
+    };
+
+    log::info!("Using profile: {}", profile_name);
+
     let command_name: &str = (&cli.command).into();
 
     let result = match cli.command {
-        Commands::Install(args) => commands::install::run(args),
-        Commands::Uninstall(args) => commands::uninstall::run(args),
-        Commands::Quantize(args) => commands::quantize::run(args),
-        Commands::Convert(args) => commands::convert::run(args),
-        Commands::Server(args) => commands::server::run(args),
-        Commands::Daemon(args) => commands::daemon::run(args),
+        Commands::Install(args) => commands::install::run(args, &config, profile),
+        Commands::Uninstall(args) => commands::uninstall::run(args, &config, profile),
+        Commands::Quantize(args) => commands::quantize::run(args, &config, profile),
+        Commands::Convert(args) => commands::convert::run(args, &config, profile),
+        Commands::Server(args) => commands::server::run(args, &config, profile),
+        Commands::Daemon(args) => commands::daemon::run(args, &config, profile),
     };
 
     if result.is_err() {

@@ -38,50 +38,50 @@ pub type Result<T> = std::result::Result<T, CommandError>;
 
 #[derive(Args, Debug)]
 pub struct CommonArguments {
-    #[arg(long, default_value = "~/.llama-mgr")]
+    #[arg(long, default_value = "~/.llama-mgr/config.toml")]
     /// Data directory for installation files and configuration.
-    pub data_dir: String,
+    pub config: PathBuf,
 
-    #[arg(long, default_value = "global")]
+    #[arg(long, default_value = "vulkan")]
     /// Name of installation profile to use.
-    pub instance: String,
+    pub profile: String,
 }
 
 impl CommonArguments {
-    pub fn get_data_dir(&self) -> PathBuf {
-        PathBuf::from(shellexpand::tilde(&self.data_dir).to_string())
-    }
-
-    pub fn data_dir_exists(&self) -> bool {
-        self.get_data_dir().exists()
-    }
-
-    pub fn create_data_dir(&self) -> Result<()> {
-        fs::create_dir_all(self.get_data_dir()).map_err(|e| {
-            CommandError::new(
-                format!("Failed to create data directory: {}", e),
+    pub fn create_default_config_file(&self) -> Result<()> {
+        if self.config.exists() {
+            return Err(CommandError::new(
+                format!("Config file already exists at: {:?}", self.config),
                 exitcode::CANTCREAT as u8,
-            )
-        })
-    }
+            ));
+        }
 
-    pub fn get_instance_dir(&self) -> PathBuf {
-        let mut instance_path = self.get_data_dir();
-        instance_path.push("instances");
-        instance_path.push(&self.instance);
-        instance_path
-    }
+        if let Some(parent) = self.config.parent() {
+            if !parent.exists() {
+                fs::create_dir_all(parent).map_err(|e| {
+                    CommandError::new(
+                        format!("Failed to create config directory: {}", e),
+                        exitcode::CANTCREAT as u8,
+                    )
+                })?;
+            }
+        }
 
-    pub fn instance_dir_exists(&self) -> bool {
-        self.get_instance_dir().exists()
-    }
-
-    pub fn create_instance_dir(&self) -> Result<()> {
-        fs::create_dir_all(self.get_instance_dir()).map_err(|e| {
+        let default_config = crate::config::Config::default();
+        let toml_content = toml::to_string(&default_config).map_err(|e| {
             CommandError::new(
-                format!("Failed to create instance directory: {}", e),
-                exitcode::CANTCREAT as u8,
+                format!("Failed to serialize default config: {}", e),
+                exitcode::SOFTWARE as u8,
             )
-        })
+        })?;
+
+        fs::write(&self.config, toml_content).map_err(|e| {
+            CommandError::new(
+                format!("Failed to write config file: {}", e),
+                exitcode::IOERR as u8,
+            )
+        })?;
+
+        Ok(())
     }
 }

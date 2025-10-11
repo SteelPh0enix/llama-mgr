@@ -92,8 +92,6 @@ impl FromStr for Version {
 
 #[cfg(test)]
 mod tests {
-    use std::num::{IntErrorKind, ParseIntError};
-
     use super::*;
 
     #[test]

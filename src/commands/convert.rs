@@ -1,6 +1,9 @@
 use clap::Parser;
 
-use crate::commands::{CommonArguments, Result};
+use crate::{
+    commands::{CommonArguments, Result},
+    config::{Config, Profile},
+};
 
 #[derive(Debug, Parser)]
 pub struct ConvertCommand {
@@ -16,7 +19,12 @@ pub struct ConvertCommand {
     pub output: String,
 }
 
-pub fn run(args: ConvertCommand) -> Result<()> {
-    log::info!("Convert command called with args: {:?}", args);
+pub fn run(args: ConvertCommand, config: &Config, profile: &Profile) -> Result<()> {
+    log::info!(
+        "Convert command called with args: {:?}, config: {:?}, profile: {:?}",
+        args,
+        config,
+        profile
+    );
     Ok(())
 }

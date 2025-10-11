@@ -1,6 +1,9 @@
 use clap::Parser;
 
-use crate::commands::{CommonArguments, Result};
+use crate::{
+    commands::{CommonArguments, Result},
+    config::{Config, Profile},
+};
 
 #[derive(Debug, Parser)]
 pub struct ServerCommand {
@@ -28,7 +31,12 @@ pub struct ServerCommand {
     pub gpu_layers: Option<u32>,
 }
 
-pub fn run(args: ServerCommand) -> Result<()> {
-    log::info!("Server command called with args: {:?}", args);
+pub fn run(args: ServerCommand, config: &Config, profile: &Profile) -> Result<()> {
+    log::info!(
+        "Server command called with args: {:?}, config: {:?}, profile: {:?}",
+        args,
+        config,
+        profile
+    );
     Ok(())
 }
