@@ -34,6 +34,7 @@ Both command-line interface and API provide the same functionality.
 - `cmake` and `ninja` for building `llama.cpp`
 - C++ toolchain for the platform of your choice
   - For CPU inference, any modern version of GCC/Clang/MSVC should be fine
+  - For generic GPU inference, Vulkan development tools are required
   - For AMD GPU inference, ROCm is required
   - For NVIDIA GPU inference, CUDA is required
   - For other platforms and additional acceleration options (MPI, BLAS, etc.), consult `llama.cpp` and `ggml`
@@ -43,15 +44,15 @@ Both command-line interface and API provide the same functionality.
 
 Usage:
 
-`llama-mgr <command> <command-args> [-h] [--data-dir/-d <config-file>] [--instance/-i <name>]`
+`llama-mgr [--help/-h] [--config/-c <config-file>] [--profile/-p <profile-name>] <command> <args>`
 
-`-h` forces `llama-mgr` to print help and immediately exit.
+`--help/-h` forces `llama-mgr` to print help and immediately exit.
 
-`--data-dir/-d` forces `llama-mgr` to use non-default data directory and configuration file, or create a new one.
-Default data directory is `$HOME/.llama-mgr`, referred to as `$LLAMA_MGR_DIR`.
-Configuration file is in `$LLAMA_MGR_DIR/config.toml`.
+`--config/-c` forces `llama-mgr` to use non-default configuration file, or create a new one.
+Default configuration file is `$HOME/.llama-mgr/config.toml`.
 
-`--instance/-i` makes `llama-mgr` use specified `llama.cpp` instance.
+`--profile/-p` select the profile to use. Default profile can be set in configuration file.
+Settings for all profiles is stored in configuration file.
 
 Available commands:
 
@@ -71,11 +72,11 @@ Each command may accept additional arguments.
 This command can be used to download, build and install `llama.cpp`.
 It does that in few steps.
 
-All the data for `llama.cpp` instance is stored in configurable installation directory, by default
-`$LLAMA_MGR_DIR/instances/$INSTALL_NAME`, where `$INSTALL_NAME` is the name of `llama.cpp` instance.
-This directory will be referred to as `$LLAMA_INSTANCE_DIR`.
+All the data for `llama.cpp` instance is stored in llama directory: `paths.llama_dir` setting in configuration.
+Each instance has it's own subdirectory.
+This subdirectory will be referred to as `$LLAMA_INSTANCE_DIR`.
 
-First, it pulls the source code of `llama.cpp` from remote Git server (along with all the submodules) into the `/repo`
+First, it pulls the source code of `llama.cpp` (along with all the submodules) using Git into the `/repo`
 subdirectory of install dir (`$LLAMA_INSTANCE_DIR/repo`).
 The URL of repository and branch to be checked out is configurable.
 By default it checks out `master` branch of [official `llama.cpp` repository](https://github.com/ggml-org/llama.cpp).
@@ -86,11 +87,10 @@ If `--pull-only` option is specified, the process ends here.
 After pulling the source code, `llama-mgr` verifies that the host environment has all the prerequisites installed.
 If not, the command immediately fails with appropriate message.
 
-Next, `cmake` is called with arguments gathered from defaults, configuration file and CLI, to generate the build files
+Next, `cmake` is called with arguments (custom arguments can be added in configuration file) to generate the build files
 in `$LLAMA_INSTANCE_DIR/build`.
 Default arguments specify build type to `Release` and install prefix to `$LLAMA_INSTANCE_DIR/install`.
-User can manually specify additional arguments via CLI or configuration file.
-Building for specific architecture via `--arch` adds the arguments for that architecture from configuration file.
+Build configurations are stored in profiles. Default configuration file contains profiles for generic CPU and Vulkan.
 
 Afterwards, `llama.cpp` is built and installed with `cmake`.
 
@@ -105,17 +105,11 @@ This command accepts following additional arguments:
                     only updates existing installation.
 - `--ignore-python` - Skips the Python environment configuration.
                       Note that it will make conversion scripts unavailable.
-- `--repo-url [url]` - Use custom repository, instead of [official one](https://github.com/ggml-org/llama.cpp).
-- `--branch [name]` - Use custom branch, instead of `master`.
-- `--cmake-args [arguments]` - Add custom arguments to `cmake` for building `llama.cpp`.
-                               It's strongly recommended to put the argument list in double-quotes.
-- `--arch [architecture]` - Specify the architecture to build for. Available choices: `cpu`, `rocm`. (TODO: NVIDIA/Intel).
-                            Using this arguments makes `llama-mgr` add arch-specific arguments to CMake call.
 - `--parallel [n]` - Specify the amount of threads to use for building, uses 1 thread per CPU core by default.
 
 #### `uninstall`
 
-Removes current instance of `llama.cpp` by deleting it's directory from `llama-mgr`'s data dir.
+Removes currently selected instance of `llama.cpp` by deleting it's directory from `llama-mgr`'s data dir.
 
 #### `quantize`
 
@@ -146,6 +140,40 @@ This command forwards it's arguments (except consumed ones, like `--instance`) t
 #### `daemon`
 
 TODO
+
+## Configuration file
+
+Configuration is stored in a TOML file with following structure:
+
+```toml
+[config]
+default_profile = vulkan
+
+# all paths may be relative to this file
+[paths]
+# directory with llama.cpp files and virtualenvs
+llama_dir = ./llama
+# directory with quantized models
+models_dir = = ./models
+
+[profile.cpu]
+# Additional arguments for CMake
+cmake_args = [
+  "-DGGML_CPU=ON"
+  "-DGGML_LTO=ON"
+]
+# Ninja is the default generator, custom ones can be set with this setting
+# cmake_generator = "Xcode"
+
+[profile.vulkan]
+cmake_args = [
+  "-DGGML_VULKAN=ON"
+  "-DGGML_LTO=ON"
+]
+```
+
+Custom profiles can be added by creating `[profile.<name>]` sections.
+`cmake_args` is the only required field in profile config.
 
 ## HTTP API
 
