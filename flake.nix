@@ -50,6 +50,8 @@
           uv
           gcc
           clang
+          openssl
+          curlFull
 
           # llama.cpp optionals
           openmpi
