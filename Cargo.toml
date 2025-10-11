@@ -7,15 +7,13 @@ description = "Utility for managing llama.cpp tools, models and server instances
 license = "MIT"
 
 [dependencies]
-clap = { version = "4.5.43", features = ["derive"] }
+clap = { version = "4.5.48", features = ["derive"] }
 env_logger = "0.11.8"
 exitcode = "1.1.2"
-log = "0.4.27"
-regex = "1.11.1"
+log = "0.4.28"
+regex = "1.12.1"
+serde = "1.0.228"
 shellexpand = "3.1.1"
-thiserror = "2.0.14"
-toml = "0.9.5"
+thiserror = "2.0.17"
+toml = "0.9.8"
 which = "8.0.0"
-
-[dev-dependencies]
-serial_test = "3.2.0"
