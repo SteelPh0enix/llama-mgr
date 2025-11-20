@@ -22,14 +22,6 @@ pub struct InstallCommand {
     common: CommonArguments,
 
     #[arg(long)]
-    /// Do not trigger installation, only download the repo
-    pub pull_only: bool,
-
-    #[arg(long)]
-    /// Do not install llama.cpp, only update existing profiles
-    pub update_only: bool,
-
-    #[arg(long)]
     /// Skip Python installation and setup
     pub ignore_python: bool,
 
@@ -58,49 +50,77 @@ fn get_git() -> Result<Git> {
     }
 }
 
+fn get_cmake() -> Result<CMake> {
+    log::info!("Verifying CMake presence...");
+
+    match CMake::global() {
+        Err(_) => Err(CommandError::new(
+            "CMake is not installed. Please install it using your system's package manager."
+                .to_string(),
+            exitcode::UNAVAILABLE as u8,
+        )),
+        Ok(prog) => {
+            log::info!("CMake is installed.");
+            Ok(prog)
+        }
+    }
+}
+
+fn get_ninja() -> Result<Ninja> {
+    log::info!("Verifying Ninja presence...");
+
+    match Ninja::global() {
+        Err(_) => Err(CommandError::new(
+            "Ninja is not installed. Please install it using your system's package manager."
+                .to_string(),
+            exitcode::UNAVAILABLE as u8,
+        )),
+        Ok(prog) => {
+            log::info!("Ninja is installed.");
+            Ok(prog)
+        }
+    }
+}
+
+fn get_uv() -> Result<Uv> {
+    log::info!("Verifying uv presence...");
+
+    let uv = match Uv::global() {
+        Err(_) => return Err(CommandError::new(
+            "uv is not installed. Please install it using `pip install uv`.".to_string(),
+            exitcode::UNAVAILABLE as u8,
+        )),
+        Ok(prog) => {
+            log::info!("uv is installed.");
+            prog
+        }
+    };
+
+    Ok(uv)
+}
+
+fn install_python_with_uv(uv: &Uv) -> Result<()> {
+    uv.install_python_version(RECOMMENDED_PYTHON_VERSION)
+        .map_err(|e| CommandError {
+            message: format!("Could not install Python - {}", e),
+            exit_code: ExitCode::from(exitcode::SOFTWARE as u8),
+        })
+}
+
 fn get_prerequisites(args: &InstallCommand) -> Result<(CMake, Ninja, Option<Uv>)> {
     log::info!("Verifying prerequisites presence...");
 
-    let cmake =
-        match CMake::global() {
-            Err(_) => return Err(CommandError::new(
-                "CMake is not installed. Please install it using your system's package manager."
-                    .to_string(),
-                exitcode::UNAVAILABLE as u8,
-            )),
-            Ok(prog) => prog,
-        };
-
-    let ninja =
-        match Ninja::global() {
-            Err(_) => return Err(CommandError::new(
-                "Ninja is not installed. Please install it using your system's package manager."
-                    .to_string(),
-                exitcode::UNAVAILABLE as u8,
-            )),
-            Ok(prog) => prog,
-        };
-
-    let mut uv: Option<Uv> = None;
-    if !args.ignore_python {
-        uv = match Uv::global() {
-            Err(_) => {
-                return Err(CommandError::new(
-                    "uv is not installed. Please install it using `pip install uv`.".to_string(),
-                    exitcode::UNAVAILABLE as u8,
-                ));
-            }
-            Ok(prog) => Some(prog),
-        };
-
-        uv.as_ref()
-            .unwrap()
-            .install_python_version(RECOMMENDED_PYTHON_VERSION)
-            .map_err(|e| CommandError {
-                message: format!("Could not install Python - {}", e),
-                exit_code: ExitCode::from(exitcode::SOFTWARE as u8),
-            })?;
-    }
+    let cmake = get_cmake()?;
+    let ninja = get_ninja()?;
+    
+    let uv = if args.ignore_python {
+        log::info!("Skipping Python setup as requested.");
+        None
+    } else {
+        let uv = get_uv()?;
+        install_python_with_uv(&uv)?;
+        Some(uv)
+    };
 
     log::info!("All build prerequisites are installed.");
     Ok((cmake, ninja, uv))
