@@ -28,13 +28,11 @@ impl FromStr for PythonInstance {
                 None
             } else if path_info.contains(" -> ") {
                 if let Some((first_path, _)) = path_info.split_once(" -> ") {
-                    // unwrap is infallible here
                     Some(PathBuf::from_str(first_path.trim()).unwrap())
                 } else {
                     None
                 }
             } else {
-                // unwrap is infallible here
                 Some(PathBuf::from_str(path_info.trim()).unwrap())
             };
 

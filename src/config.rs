@@ -42,25 +42,25 @@ impl Default for Config {
             },
             profiles: {
                 let mut profiles = HashMap::new();
-                
+
                 // Default CPU profile
-                profiles.insert("cpu".to_string(), Profile {
-                    cmake_args: vec![
-                        "-DGGML_CPU=ON".to_string(),
-                        "-DGGML_LTO=ON".to_string(),
-                    ],
-                    cmake_generator: None,
-                });
-                
+                profiles.insert(
+                    "cpu".to_string(),
+                    Profile {
+                        cmake_args: vec!["-DGGML_CPU=ON".to_string()],
+                        cmake_generator: None,
+                    },
+                );
+
                 // Default Vulkan profile
-                profiles.insert("vulkan".to_string(), Profile {
-                    cmake_args: vec![
-                        "-DGGML_VULKAN=ON".to_string(),
-                        "-DGGML_LTO=ON".to_string(),
-                    ],
-                    cmake_generator: None,
-                });
-                
+                profiles.insert(
+                    "vulkan".to_string(),
+                    Profile {
+                        cmake_args: vec!["-DGGML_VULKAN=ON".to_string()],
+                        cmake_generator: None,
+                    },
+                );
+
                 profiles
             },
         }
