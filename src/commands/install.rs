@@ -30,7 +30,7 @@ pub struct InstallCommand {
     pub parallel: Option<usize>,
 }
 
-pub fn run(args: InstallCommand, config: &Config, profile: &Profile) -> Result<()> {
+pub fn run(_args: InstallCommand, _config: &Config, _profile: &Profile) -> Result<()> {
     todo!()
 }
 
@@ -86,10 +86,12 @@ fn get_uv() -> Result<Uv> {
     log::info!("Verifying uv presence...");
 
     let uv = match Uv::global() {
-        Err(_) => return Err(CommandError::new(
-            "uv is not installed. Please install it using `pip install uv`.".to_string(),
-            exitcode::UNAVAILABLE as u8,
-        )),
+        Err(_) => {
+            return Err(CommandError::new(
+                "uv is not installed. Please install it using `pip install uv`.".to_string(),
+                exitcode::UNAVAILABLE as u8,
+            ));
+        }
         Ok(prog) => {
             log::info!("uv is installed.");
             prog
@@ -112,7 +114,7 @@ fn get_prerequisites(args: &InstallCommand) -> Result<(CMake, Ninja, Option<Uv>)
 
     let cmake = get_cmake()?;
     let ninja = get_ninja()?;
-    
+
     let uv = if args.ignore_python {
         log::info!("Skipping Python setup as requested.");
         None
@@ -128,26 +130,64 @@ fn get_prerequisites(args: &InstallCommand) -> Result<(CMake, Ninja, Option<Uv>)
 
 fn pull_or_update_source_code(
     git: &Git,
-    args: &InstallCommand,
-    instance_path: impl AsRef<Path>,
+    repo_url: &str,
+    branch: Option<&str>,
+    target_path: impl AsRef<Path>,
 ) -> Result<()> {
-    todo!()
+    if target_path.as_ref().exists() {
+        log::info!(
+            "Repository already exists at {}. Updating...",
+            target_path.as_ref().display()
+        );
+        git.pull(&target_path).map_err(|e| CommandError {
+            message: format!("Failed to pull repository: {}", e),
+            exit_code: ExitCode::from(exitcode::IOERR as u8),
+        })?;
+    } else {
+        log::info!(
+            "Cloning repository from {} to {}",
+            repo_url,
+            target_path.as_ref().display()
+        );
+        git.clone(
+            &target_path,
+            repo_url,
+            branch.map(|b| b.as_ref() as &std::ffi::OsStr),
+        )
+        .map_err(|e| CommandError {
+            message: format!("Failed to clone repository: {}", e),
+            exit_code: ExitCode::from(exitcode::CANTCREAT as u8),
+        })?;
+    }
+
+    // Initialize and update submodules
+    log::info!("Updating submodules...");
+    git.update_submodules(&target_path)
+        .map_err(|e| CommandError {
+            message: format!("Failed to update submodules: {}", e),
+            exit_code: ExitCode::from(exitcode::IOERR as u8),
+        })?;
+
+    Ok(())
 }
 
 fn generate_cmake_build_files(
-    args: &InstallCommand,
-    instance_path: impl AsRef<Path>,
+    _args: &InstallCommand,
+    _instance_path: impl AsRef<Path>,
 ) -> Result<()> {
     todo!()
 }
 
 fn build_and_install_llama_cpp(
-    args: &InstallCommand,
-    instance_path: impl AsRef<Path>,
+    _args: &InstallCommand,
+    _instance_path: impl AsRef<Path>,
 ) -> Result<()> {
     todo!()
 }
 
-fn setup_python_environment(args: &InstallCommand, instance_path: impl AsRef<Path>) -> Result<()> {
+fn setup_python_environment(
+    _args: &InstallCommand,
+    _instance_path: impl AsRef<Path>,
+) -> Result<()> {
     todo!()
 }
