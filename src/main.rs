@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
@@ -7,21 +7,18 @@ mod commands;
 mod config;
 mod external_tools;
 
+use commands::RuntimeError;
 use config::Config;
 
 #[derive(Parser)]
 #[command(name = "llama-mgr", version, author, about)]
 struct Cli {
+    /// List of available commands
     #[command(subcommand)]
     command: Commands,
 
     /// Path to the configuration file
-    #[arg(
-        short,
-        long,
-        global = true,
-        default_value = "$HOME/.llama-mgr/config.toml"
-    )]
+    #[arg(short, long, global = true, default_value = "~/.llama-mgr/config.toml")]
     config: String,
 
     /// Profile to use
@@ -57,6 +54,42 @@ impl From<&Commands> for &str {
         }
     }
 }
+fn create_default_config_file(config_path: &Path) -> std::result::Result<(), RuntimeError> {
+    if config_path.exists() {
+        return Err(RuntimeError::new(
+            format!("Config file already exists at: {:?}", config_path),
+            exitcode::CANTCREAT as u8,
+        ));
+    }
+
+    if let Some(parent) = config_path.parent() {
+        if !parent.exists() {
+            std::fs::create_dir_all(parent).map_err(|e| {
+                RuntimeError::new(
+                    format!("Failed to create config directory: {}", e),
+                    exitcode::CANTCREAT as u8,
+                )
+            })?;
+        }
+    }
+
+    let default_config = Config::default();
+    let toml_content = toml::to_string(&default_config).map_err(|e| {
+        RuntimeError::new(
+            format!("Failed to serialize default config: {}", e),
+            exitcode::SOFTWARE as u8,
+        )
+    })?;
+
+    std::fs::write(config_path, toml_content).map_err(|e| {
+        RuntimeError::new(
+            format!("Failed to write config file: {}", e),
+            exitcode::IOERR as u8,
+        )
+    })?;
+
+    Ok(())
+}
 
 /// Load configuration from file
 fn load_config(config_path: &str) -> Result<Config, Box<dyn std::error::Error>> {
@@ -64,20 +97,7 @@ fn load_config(config_path: &str) -> Result<Config, Box<dyn std::error::Error>> 
     let config_path = PathBuf::from(expanded_path.as_ref());
 
     if !config_path.exists() {
-        log::info!(
-            "Configuration file not found, creating default configuration at: {:?}",
-            config_path
-        );
-
-        // Create parent directories if they don't exist
-        if let Some(parent) = config_path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-
-        // Write default configuration
-        let default_config = Config::default();
-        let config_str = toml::to_string_pretty(&default_config)?;
-        std::fs::write(&config_path, config_str)?;
+        create_default_config_file(&config_path)?;
     }
 
     let config_str = std::fs::read_to_string(&config_path)?;

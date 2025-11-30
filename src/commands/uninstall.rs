@@ -1,15 +1,12 @@
 use clap::Parser;
 
 use crate::{
-    commands::{CommonArguments, Result},
+    commands::Result,
     config::{Config, Profile},
 };
 
 #[derive(Debug, Parser)]
 pub struct UninstallCommand {
-    #[command(flatten)]
-    common: CommonArguments,
-
     #[arg(long, short)]
     /// Force uninstall without confirmation
     pub force: bool,

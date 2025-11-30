@@ -3,7 +3,7 @@ use std::{path::Path, process::ExitCode};
 use clap::Parser;
 
 use crate::{
-    commands::{CommandError, CommonArguments, Result},
+    commands::{Result, RuntimeError},
     config::{Config, Profile},
     external_tools::{
         ExternalTool, cmake::CMake, git::Git, ninja::Ninja, uv::Uv, version::Version,
@@ -18,9 +18,6 @@ const RECOMMENDED_PYTHON_VERSION: Version = Version {
 
 #[derive(Debug, Parser)]
 pub struct InstallCommand {
-    #[command(flatten)]
-    common: CommonArguments,
-
     #[arg(long)]
     /// Skip Python installation and setup
     pub ignore_python: bool,
@@ -38,7 +35,7 @@ fn get_git() -> Result<Git> {
     log::info!("Verifying git presence...");
 
     match Git::global() {
-        Err(_) => Err(CommandError::new(
+        Err(_) => Err(RuntimeError::new(
             "Git is not installed. Please install it using your system's package manager."
                 .to_string(),
             exitcode::UNAVAILABLE as u8,
@@ -54,7 +51,7 @@ fn get_cmake() -> Result<CMake> {
     log::info!("Verifying CMake presence...");
 
     match CMake::global() {
-        Err(_) => Err(CommandError::new(
+        Err(_) => Err(RuntimeError::new(
             "CMake is not installed. Please install it using your system's package manager."
                 .to_string(),
             exitcode::UNAVAILABLE as u8,
@@ -70,7 +67,7 @@ fn get_ninja() -> Result<Ninja> {
     log::info!("Verifying Ninja presence...");
 
     match Ninja::global() {
-        Err(_) => Err(CommandError::new(
+        Err(_) => Err(RuntimeError::new(
             "Ninja is not installed. Please install it using your system's package manager."
                 .to_string(),
             exitcode::UNAVAILABLE as u8,
@@ -87,7 +84,7 @@ fn get_uv() -> Result<Uv> {
 
     let uv = match Uv::global() {
         Err(_) => {
-            return Err(CommandError::new(
+            return Err(RuntimeError::new(
                 "uv is not installed. Please install it using `pip install uv`.".to_string(),
                 exitcode::UNAVAILABLE as u8,
             ));
@@ -103,7 +100,7 @@ fn get_uv() -> Result<Uv> {
 
 fn install_python_with_uv(uv: &Uv) -> Result<()> {
     uv.install_python_version(RECOMMENDED_PYTHON_VERSION)
-        .map_err(|e| CommandError {
+        .map_err(|e| RuntimeError {
             message: format!("Could not install Python - {}", e),
             exit_code: ExitCode::from(exitcode::SOFTWARE as u8),
         })
@@ -139,7 +136,7 @@ fn pull_or_update_source_code(
             "Repository already exists at {}. Updating...",
             target_path.as_ref().display()
         );
-        git.pull(&target_path).map_err(|e| CommandError {
+        git.pull(&target_path).map_err(|e| RuntimeError {
             message: format!("Failed to pull repository: {}", e),
             exit_code: ExitCode::from(exitcode::IOERR as u8),
         })?;
@@ -154,7 +151,7 @@ fn pull_or_update_source_code(
             repo_url,
             branch.map(|b| b.as_ref() as &std::ffi::OsStr),
         )
-        .map_err(|e| CommandError {
+        .map_err(|e| RuntimeError {
             message: format!("Failed to clone repository: {}", e),
             exit_code: ExitCode::from(exitcode::CANTCREAT as u8),
         })?;
@@ -163,7 +160,7 @@ fn pull_or_update_source_code(
     // Initialize and update submodules
     log::info!("Updating submodules...");
     git.update_submodules(&target_path)
-        .map_err(|e| CommandError {
+        .map_err(|e| RuntimeError {
             message: format!("Failed to update submodules: {}", e),
             exit_code: ExitCode::from(exitcode::IOERR as u8),
         })?;

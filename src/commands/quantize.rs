@@ -1,15 +1,12 @@
 use clap::Parser;
 
 use crate::{
-    commands::{CommonArguments, Result},
+    commands::Result,
     config::{Config, Profile},
 };
 
 #[derive(Debug, Parser)]
 pub struct QuantizeCommand {
-    #[command(flatten)]
-    common: CommonArguments,
-
     #[arg(long, short)]
     /// Path to the input GGUF file
     pub input: String,

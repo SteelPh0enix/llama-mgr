@@ -1,15 +1,12 @@
 use clap::Parser;
 
 use crate::{
-    commands::{CommonArguments, Result},
+    commands::Result,
     config::{Config, Profile},
 };
 
 #[derive(Debug, Parser)]
 pub struct ConvertCommand {
-    #[command(flatten)]
-    common: CommonArguments,
-
     #[arg(long, short)]
     /// Path to the directory with HuggingFace model
     pub input: String,
