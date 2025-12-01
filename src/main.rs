@@ -5,9 +5,10 @@ use clap::{Parser, Subcommand};
 
 mod commands;
 mod config;
+mod error;
 mod external_tools;
 
-use commands::RuntimeError;
+use crate::error::RuntimeError;
 use config::Config;
 
 #[derive(Parser)]
