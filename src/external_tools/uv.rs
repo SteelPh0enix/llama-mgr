@@ -1,7 +1,7 @@
 use crate::external_tools::ExternalTool;
 use crate::external_tools::version::Version;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::str::FromStr;
 
@@ -16,6 +16,12 @@ pub struct PythonInstance {
     pub id: String,
     pub version: Version,
     pub path: Option<PathBuf>,
+}
+
+#[derive(Debug)]
+pub struct VirtualEnvironment {
+    pub path: PathBuf,
+    pub python_instance: PythonInstance,
 }
 
 impl FromStr for PythonInstance {
@@ -47,10 +53,12 @@ impl FromStr for PythonInstance {
     }
 }
 
+pub type UvResult<T> = Result<T, std::io::Error>;
+
 impl Uv {
     /// Returns a list of python instances returned from `uv`.
     /// Instances that have a path are currently installed.
-    pub fn get_python_instances(&self) -> Result<Vec<PythonInstance>, std::io::Error> {
+    pub fn get_python_instances(&self) -> UvResult<Vec<PythonInstance>> {
         let output = Command::new(&self.path)
             .arg("python")
             .arg("list")
@@ -75,7 +83,7 @@ impl Uv {
     }
 
     /// Installs (or updates) selected python instance.
-    pub fn install_python_instance(&self, instance: PythonInstance) -> Result<(), std::io::Error> {
+    pub fn install_python_instance(&self, instance: PythonInstance) -> UvResult<()> {
         let mut command = Command::new(&self.path);
         command.arg("python").arg("install").arg(instance.id);
 
@@ -94,7 +102,7 @@ impl Uv {
     /// Installs (or updates) selected python instance by version.
     /// If multiple versions are available, picks the first one.
     /// If some parts of the version are missing, the latest one matching the missing part is installed.
-    pub fn install_python_version(&self, version: Version) -> Result<(), std::io::Error> {
+    pub fn install_python_version(&self, version: Version) -> UvResult<()> {
         let mut command = Command::new(&self.path);
         command
             .arg("python")
@@ -114,10 +122,7 @@ impl Uv {
     }
 
     /// Uninstalls selected python instance.
-    pub fn uninstall_python_instance(
-        &self,
-        instance: PythonInstance,
-    ) -> Result<(), std::io::Error> {
+    pub fn uninstall_python_instance(&self, instance: PythonInstance) -> UvResult<()> {
         let mut command = Command::new(&self.path);
         command.arg("python").arg("uninstall").arg(instance.id);
 
@@ -134,7 +139,7 @@ impl Uv {
     }
 
     /// Uninstalls selected python instance by version.
-    pub fn uninstall_python_version(&self, version: Version) -> Result<(), std::io::Error> {
+    pub fn uninstall_python_version(&self, version: Version) -> UvResult<()> {
         let mut command = Command::new(&self.path);
         command
             .arg("python")
@@ -151,6 +156,39 @@ impl Uv {
         }
 
         Ok(())
+    }
+
+    /// Creates a virtual environment using a specific Python version
+    pub fn create_venv<T: AsRef<Path>>(
+        &self,
+        path: T,
+        version: Version,
+    ) -> UvResult<VirtualEnvironment> {
+        let mut command = Command::new(&self.path);
+        command.arg("venv").arg("--python").arg(version.to_string()).arg(path.as_ref());
+
+        let status = command.status()?;
+
+        if !status.success() {
+            return Err(std::io::Error::other(format!(
+                "'uv venv' failed with status: {}",
+                status
+            )));
+        }
+
+        // Get the python instance that was used to create the venv
+        let python_instances = self.get_python_instances()?;
+        
+        // Find the instance that matches our version
+        let python_instance = python_instances
+            .into_iter()
+            .find(|instance| instance.version == version)
+            .ok_or_else(|| std::io::Error::other("Failed to find Python instance for virtual environment"))?;
+
+        Ok(VirtualEnvironment {
+            path: path.as_ref().to_path_buf(),
+            python_instance,
+        })
     }
 }
 
@@ -217,8 +255,7 @@ mod tests {
             .into_iter()
             .find(|i| i.id == instance_id && i.path.is_some())
         {
-            uv.uninstall_python_instance(instance_to_uninstall)
-                .unwrap();
+            uv.uninstall_python_instance(instance_to_uninstall).unwrap();
         }
 
         // Get the instance to install (it should have path: None)
@@ -287,5 +324,33 @@ mod tests {
             .into_iter()
             .find(|i| i.version == version_to_test && i.path.is_some());
         assert!(uninstalled_instance.is_none());
+    }
+
+    #[test]
+    #[serial]
+    fn test_create_venv() {
+        let uv = Uv::global().unwrap();
+        
+        // Install Python version 3.8.20 if not already installed
+        let version_to_test = Version::from_str("3.8.20").unwrap();
+        let python_instances = uv.get_python_instances().unwrap();
+        let needs_install = !python_instances
+            .iter()
+            .any(|i| i.version == version_to_test && i.path.is_some());
+            
+        if needs_install {
+            uv.install_python_version(version_to_test.clone()).unwrap();
+        }
+        
+        // Create a virtual environment
+        let venv_path = std::env::temp_dir().join("test_venv");
+        let venv = uv.create_venv(&venv_path, version_to_test).unwrap();
+        
+        // Verify the virtual environment was created
+        assert_eq!(venv.path, venv_path);
+        assert_eq!(venv.python_instance.version, version_to_test);
+        
+        // Clean up
+        std::fs::remove_dir_all(&venv_path).unwrap_or_else(|_| ());
     }
 }

@@ -2,7 +2,7 @@ use regex::Regex;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone, Copy)]
 pub struct Version {
     pub major: u8,
     pub minor: Option<u8>,
