@@ -12,8 +12,8 @@ cargo build --release
 # Run tests
 cargo test
 
-# Run tests for a specific command (e.g., install)
-cargo test --lib --no-default-features --features install
+# Run tests for specific module
+cargo test cmake
 ```
 
 ## Linting
@@ -50,7 +50,7 @@ cargo clippy --all-targets
 
 ### Testing
 
-- Use serial_test for parallel tests
+- Use serial_test for tests that may share resources (like filesystem or network)
 - Write tests for all public functions
 - Mock external dependencies when possible
 
