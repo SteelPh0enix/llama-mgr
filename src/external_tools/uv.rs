@@ -24,6 +24,11 @@ pub struct VirtualEnvironment {
     pub python_instance: PythonInstance,
 }
 
+#[derive(Debug)]
+pub struct VirtualEnvironmentShell {
+    pub venv: VirtualEnvironment,
+}
+
 impl FromStr for PythonInstance {
     type Err = ();
 
@@ -165,7 +170,11 @@ impl Uv {
         version: Version,
     ) -> UvResult<VirtualEnvironment> {
         let mut command = Command::new(&self.path);
-        command.arg("venv").arg("--python").arg(version.to_string()).arg(path.as_ref());
+        command
+            .arg("venv")
+            .arg("--python")
+            .arg(version.to_string())
+            .arg(path.as_ref());
 
         let status = command.status()?;
 
@@ -178,12 +187,14 @@ impl Uv {
 
         // Get the python instance that was used to create the venv
         let python_instances = self.get_python_instances()?;
-        
+
         // Find the instance that matches our version
         let python_instance = python_instances
             .into_iter()
             .find(|instance| instance.version == version)
-            .ok_or_else(|| std::io::Error::other("Failed to find Python instance for virtual environment"))?;
+            .ok_or_else(|| {
+                std::io::Error::other("Failed to find Python instance for virtual environment")
+            })?;
 
         Ok(VirtualEnvironment {
             path: path.as_ref().to_path_buf(),
@@ -206,6 +217,24 @@ impl ExternalTool for Uv {
 
     fn is_available(&self) -> bool {
         Command::new(&self.path).output().is_ok()
+    }
+}
+
+impl VirtualEnvironment {
+    pub fn create_shell(&self) -> UvResult<VirtualEnvironmentShell> {
+        todo!()
+    }
+}
+
+impl VirtualEnvironmentShell {
+    /// Runs a python script inside the virtual environment
+    pub fn run_python_script<T: AsRef<Path>>(&self, script_path: T) -> UvResult<()> {
+        todo!()
+    }
+
+    /// Installs Python packages inside the virtual environment
+    pub fn install_packages<T: Into<String>>(&self, packages_list: &[T]) -> UvResult<()> {
+        todo!()
     }
 }
 
@@ -330,26 +359,26 @@ mod tests {
     #[serial]
     fn test_create_venv() {
         let uv = Uv::global().unwrap();
-        
+
         // Install Python version 3.8.20 if not already installed
         let version_to_test = Version::from_str("3.8.20").unwrap();
         let python_instances = uv.get_python_instances().unwrap();
         let needs_install = !python_instances
             .iter()
             .any(|i| i.version == version_to_test && i.path.is_some());
-            
+
         if needs_install {
             uv.install_python_version(version_to_test.clone()).unwrap();
         }
-        
+
         // Create a virtual environment
         let venv_path = std::env::temp_dir().join("test_venv");
         let venv = uv.create_venv(&venv_path, version_to_test).unwrap();
-        
+
         // Verify the virtual environment was created
         assert_eq!(venv.path, venv_path);
         assert_eq!(venv.python_instance.version, version_to_test);
-        
+
         // Clean up
         std::fs::remove_dir_all(&venv_path).unwrap_or_else(|_| ());
     }
