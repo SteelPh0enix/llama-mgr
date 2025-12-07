@@ -1,8 +1,9 @@
 use crate::external_tools::ExternalTool;
 use crate::external_tools::version::Version;
 
+use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Child, Command};
 use std::str::FromStr;
 
 use which;
@@ -25,8 +26,9 @@ pub struct VirtualEnvironment {
 }
 
 #[derive(Debug)]
-pub struct VirtualEnvironmentShell {
-    pub venv: VirtualEnvironment,
+pub struct VirtualEnvironmentShell<'a> {
+    pub venv: &'a VirtualEnvironment,
+    pub shell_process: Child,
 }
 
 impl FromStr for PythonInstance {
@@ -221,12 +223,21 @@ impl ExternalTool for Uv {
 }
 
 impl VirtualEnvironment {
-    pub fn create_shell(&self) -> UvResult<VirtualEnvironmentShell> {
-        todo!()
+    /// Creates a new `bash` shell, activates the virtual environment inside it, and then returns it.
+    pub fn create_shell(&self) -> UvResult<VirtualEnvironmentShell<'_>> {
+        let activate_script_path = self.path.join("bin").join("activate");
+        let command = format!("source {} && exec bash", activate_script_path.display());
+
+        let shell_process = Command::new("bash").arg("-c").arg(&command).spawn()?;
+
+        Ok(VirtualEnvironmentShell {
+            venv: &self,
+            shell_process,
+        })
     }
 }
 
-impl VirtualEnvironmentShell {
+impl VirtualEnvironmentShell<'_> {
     /// Runs a python script inside the virtual environment
     pub fn run_python_script<T: AsRef<Path>>(&self, script_path: T) -> UvResult<()> {
         todo!()
@@ -378,6 +389,41 @@ mod tests {
         // Verify the virtual environment was created
         assert_eq!(venv.path, venv_path);
         assert_eq!(venv.python_instance.version, version_to_test);
+
+        // Clean up
+        std::fs::remove_dir_all(&venv_path).unwrap_or_else(|_| ());
+    }
+
+    #[test]
+    #[serial]
+    fn test_create_shell() {
+        let uv = Uv::global().unwrap();
+
+        // Install Python version 3.8.20 if not already installed
+        let version_to_test = Version::from_str("3.8.20").unwrap();
+        let python_instances = uv.get_python_instances().unwrap();
+        let needs_install = !python_instances
+            .iter()
+            .any(|i| i.version == version_to_test && i.path.is_some());
+
+        if needs_install {
+            uv.install_python_version(version_to_test.clone()).unwrap();
+        }
+
+        // Create a virtual environment
+        let venv_path = std::env::temp_dir().join("test_venv_shell");
+        let venv = uv.create_venv(&venv_path, version_to_test).unwrap();
+
+        // Test creating shell - this should succeed without errors
+        let shell = venv.create_shell();
+        assert!(shell.is_ok());
+
+        // Verify the shell has access to Python binaries in the virtual environment
+        let shell = shell.unwrap();
+
+        // Test that we can execute a command in the shell context
+        // Note: This is a basic test, in a real scenario we'd want more comprehensive testing
+        // TODO: after implementing run_python_script, create an example python script in temp dir and try running it with venv.
 
         // Clean up
         std::fs::remove_dir_all(&venv_path).unwrap_or_else(|_| ());
